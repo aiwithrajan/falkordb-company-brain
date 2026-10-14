@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChokePoint | FalkorDB Dependency Intelligence</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Cytoscape.js for graph rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <style>
+    #cy {
+      width: 100%;
+      height: 520px;
+      background-color: #0f172a;
+      border-radius: 0.5rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-violet-500/20">
+        ⚡
+      </div>
+      <div>
+        <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+          ChokePoint <span class="text-xs px-2 py-0.5 rounded bg-violet-500/20 text-violet-400 font-mono font-medium border border-violet-500/30">Track 01</span>
+        </h1>
+        <p class="text-xs text-slate-400">Autonomous Dependency Min-Cut Agent • Powered by FalkorDB</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-4 text-xs font-mono">
+      <span class="flex items-center gap-1.5 text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800/50">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> FalkorDB Connected
+      </span>
+      <span class="text-slate-400 border border-slate-800 px-2.5 py-1 rounded bg-slate-900">
+        MCP Tools: 6 Active
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Controls & Telemetry (4 cols) -->
+    <div class="lg:col-span-4 flex flex-col gap-6">
+      
+      <!-- Input Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-lg p-5 shadow-sm">
+        <h2 class="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+          🎯 Target Package Inspection
+        </h2>
+        
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-mono text-slate-400 mb-1">Preset Real NPM Package:</label>
+            <select id="presetSelect" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500">
+              <option value="express:4.16.0">express @ 4.16.0 (Transitive qs, body-parser)</option>
+              <option value="mocha:8.0.0">mocha @ 8.0.0 (Transitive minimatch, glob)</option>
+              <option value="body-parser:1.18.2">body-parser @ 1.18.2 (Transitive qs, raw-body)</option>
+              <option value="axios:0.21.1">axios @ 0.21.1 (follow-redirects CVEs)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-mono text-slate-400 mb-1">Package Name:</label>
+              <input type="text" id="pkgName" value="express" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-sm text-slate-200 font-mono" />
+            </div>
+            <div>
+              <label class="block text-xs font-mono text-slate-400 mb-1">Version:</label>
+              <input type="text" id="pkgVersion" value="4.16.0" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-sm text-slate-200 font-mono" />
+            </div>
+          </div>
+
+          <button id="runBtn" class="w-full mt-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium py-2 px-4 rounded text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20">
+            <span>⚡ Run ChokePoint Agent</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Agent Thought & MCP Tool Stream -->
+      <div class="bg-slate-900 border border-slate-800 rounded-lg p-5 flex-1 flex flex-col shadow-sm">
+        <h2 class="text-sm font-semibold text-slate-200 mb-3 flex items-center justify-between">
+          <span>🤖 MCP Agent Tool Stream</span>
+          <span id="agentStatus" class="text-xs font-normal text-slate-400 font-mono">Idle</span>
+        </h2>
+        
+        <div id="toolLog" class="flex-1 bg-slate-950 rounded border border-slate-800/80 p-3 font-mono text-xs overflow-y-auto space-y-2 max-h-[360px] text-slate-300">
+          <p class="text-slate-500 italic">Ready. Click 'Run ChokePoint Agent' to begin FalkorDB graph ingestion and min-cut computation.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Graph & Approval Gate (8 cols) -->
+    <div class="lg:col-span-8 flex flex-col gap-6">
+
+      <!-- Interactive Graph Container -->
+      <div class="bg-slate-900 border border-slate-800 rounded-lg p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-200">FalkorDB Directed Dependency Graph</h2>
+            <p class="text-xs text-slate-400">Green = Safe Root/Deps • Red = Reachable CVEs • Amber = ChokePoint Min-Cut</p>
+          </div>
+          <div class="text-xs font-mono flex gap-3 text-slate-400">
+            <span id="nodeCount">0 Nodes</span>
+            <span>•</span>
+            <span id="edgeCount">0 Edges</span>
+          </div>
+        </div>
+        
+        <!-- Cytoscape Canvas -->
+        <div id="cy"></div>
+      </div>
+
+      <!-- Human-in-the-Loop Approval Gate -->
+      <div id="approvalCard" class="hidden bg-gradient-to-b from-slate-900 to-slate-950 border border-violet-500/40 rounded-lg p-5 shadow-xl shadow-violet-950/20">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded font-semibold">
+                🛡️ Human Approval Gate
+              </span>
+              <span id="proofBadge" class="text-xs font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded">
+                Verified: 0 Paths Left
+              </span>
+            </div>
+            <h3 class="text-lg font-bold text-white mt-2" id="proposalTitle">Remediation Plan</h3>
+            <p class="text-xs text-slate-300 mt-1" id="proposalDesc">...</p>
+          </div>
+
+          <button id="approveBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-5 py-2.5 rounded text-sm transition shadow-lg shadow-emerald-600/20 flex items-center gap-2">
+            ✔ Approve & Generate Patch
+          </button>
+        </div>
+
+        <!-- Generated Diff Box (Hidden until approved) -->
+        <div id="diffBox" class="hidden mt-4 pt-4 border-t border-slate-800">
+          <p class="text-xs font-mono text-emerald-400 mb-2">✔ Patch Generated Successfully (package.json / overrides):</p>
+          <pre id="diffContent" class="bg-slate-950 p-3 rounded font-mono text-xs text-slate-300 border border-slate-800 overflow-x-auto"></pre>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer class="border-t border-slate-800 px-6 py-3 text-center text-xs text-slate-500 font-mono">
+    ChokePoint for Graph Hacks 2026 • Track 01: Agents That Act on Connected Data • FalkorDB In-Memory Graph
+  </footer>
+
+  <script>
+    let cy = null;
+    let currentProposal = null;
+
+    function initCytoscape() {
+      cy = cytoscape({
+        container: document.getElementById('cy'),
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': '#475569',
+              'label': 'data(label)',
+              'color': '#cbd5e1',
+              'font-size': '10px',
+              'text-valign': 'bottom',
+              'text-margin-y': 4
+            }
+          },
+          {
+            selector: 'node[type = "root"]',
+            style: {
+              'background-color': '#3b82f6',
+              'width': 28,
+              'height': 28,
+              'font-weight': 'bold',
+              'color': '#93c5fd'
+            }
+          },
+          {
+            selector: 'node[type = "vulnerable"]',
+            style: {
+              'background-color': '#ef4444',
+              'width': 22,
+              'height': 22,
+              'color': '#fca5a5'
+            }
+          },
+          {
+            selector: 'node[type = "cut"]',
+            style: {
+              'background-color': '#f59e0b',
+              'width': 28,
+              'height': 28,
+              'color': '#fde68a',
+              'border-width': 3,
+              'border-color': '#d97706'
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 1.5,
+              'line-color': '#334155',
+              'target-arrow-color': '#334155',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier'
+            }
+          }
+        ],
+        layout: { name: 'cose', animate: false }
+      });
+    }
+
+    document.getElementById('presetSelect').addEventListener('change', (e) => {
+      const [p, v] = e.target.value.split(':');
+      document.getElementById('pkgName').value = p;
+      document.getElementById('pkgVersion').value = v;
+    });
+
+    document.getElementById('runBtn').addEventListener('click', async () => {
+      const pkg = document.getElementById('pkgName').value;
+      const ver = document.getElementById('pkgVersion').value;
+      const toolLog = document.getElementById('toolLog');
+      const status = document.getElementById('agentStatus');
+      const runBtn = document.getElementById('runBtn');
+
+      runBtn.disabled = true;
+      runBtn.classList.add('opacity-50');
+      status.textContent = 'Agent Running...';
+      toolLog.innerHTML = `<p class="text-violet-400">⚡ Starting agent loop for ${pkg}@${ver}...</p>`;
+
+      try {
+        const resp = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ system: 'npm', package: pkg, version: ver })
+        });
+
+        const data = await resp.json();
+        currentProposal = data;
+
+        // Render tool steps
+        toolLog.innerHTML = '';
+        if (data.trace) {
+          data.trace.forEach(step => {
+            const p = document.createElement('div');
+            p.className = 'border-l-2 border-violet-500 pl-2 py-0.5';
+            p.innerHTML = `<span class="text-violet-400 font-bold">[${step.tool}]</span> <span class="text-slate-400">(${step.latency_ms}ms)</span><br/><span class="text-slate-300">${JSON.stringify(step.output).substring(0, 100)}...</span>`;
+            toolLog.appendChild(p);
+          });
+        }
+
+        status.textContent = 'Awaiting Approval';
+
+        // Render approval gate
+        if (data.status === 'awaiting_approval') {
+          document.getElementById('approvalCard').classList.remove('hidden');
+          document.getElementById('diffBox').classList.add('hidden');
+          document.getElementById('proposalTitle').textContent = 
+            `ChokePoint proposes ${data.chokepoint_changes_count} change(s) to sever ${data.initial_vulnerabilities} vulnerable paths`;
+          document.getElementById('proposalDesc').textContent = 
+            data.explanation ? data.explanation.impact_summary : "Zero vulnerable paths remain.";
+
+          // Populate cytoscape graph
+          renderGraph(data);
+        } else if (data.status === 'clean') {
+          toolLog.innerHTML += `<p class="text-emerald-400 mt-2 font-bold">✔ Package is already 100% clean!</p>`;
+          status.textContent = 'Clean';
+        }
+
+      } catch (err) {
+        toolLog.innerHTML += `<p class="text-rose-400">Error: ${err.message}</p>`;
+        status.textContent = 'Error';
+      } finally {
+        runBtn.disabled = false;
+        runBtn.classList.remove('opacity-50');
+      }
+    });
+
+    document.getElementById('approveBtn').addEventListener('click', async () => {
+      if (!currentProposal) return;
+      const resp = await fetch('/api/apply_patch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          package: document.getElementById('pkgName').value,
+          changes: currentProposal.proposed_changes
+        })
+      });
+      const data = await resp.json();
+      document.getElementById('diffBox').classList.remove('hidden');
+      document.getElementById('diffContent').textContent = data.patch_diff;
+    });
+
+    function renderGraph(proposal) {
+      if (!cy) initCytoscape();
+      cy.elements().remove();
+
+      const elements = [];
+      const rootId = proposal.root_package;
+      elements.push({ data: { id: rootId, label: rootId, type: 'root' } });
+
+      const cutPkgs = new Set((proposal.proposed_changes || []).map(c => c.name));
+
+      // Add cut nodes
+      (proposal.proposed_changes || []).forEach(c => {
+        elements.push({ data: { id: c.name, label: `CHOKEPOINT: ${c.name} (${c.old_version} -> ${c.new_version})`, type: 'cut' } });
+        elements.push({ data: { source: rootId, target: c.name } });
+      });
+
+      // Add vulnerable nodes
+      (proposal.initial_vulnerable_packages || []).slice(0, 15).forEach(v => {
+        const vName = v.split(':')[1] || v;
+        if (!cutPkgs.has(vName)) {
+          elements.push({ data: { id: vName, label: `CVE: ${vName}`, type: 'vulnerable' } });
+          const targetParent = proposal.proposed_changes[0] ? proposal.proposed_changes[0].name : rootId;
+          elements.push({ data: { source: targetParent, target: vName } });
+        }
+      });
+
+      cy.add(elements);
+      cy.layout({ name: 'cose', animate: true, padding: 30 }).run();
+
+      document.getElementById('nodeCount').textContent = `${elements.filter(e => !e.data.source).length} Nodes`;
+      document.getElementById('edgeCount').textContent = `${elements.filter(e => e.data.source).length} Edges`;
+    }
+
+    window.addEventListener('load', initCytoscape);
+  </script>
+</body>
+</html>
