@@ -6,9 +6,10 @@ interface CompanyOverviewProps {
   overview: OverviewData | null;
   onReset: () => void;
   isResetting: boolean;
+  onOpenIngest: () => void;
 }
 
-export const CompanyOverview: React.FC<CompanyOverviewProps> = ({ overview, onReset, isResetting }) => {
+export const CompanyOverview: React.FC<CompanyOverviewProps> = ({ overview, onReset, isResetting, onOpenIngest }) => {
   if (!overview) return null;
   const { counts } = overview;
 
@@ -26,6 +27,13 @@ export const CompanyOverview: React.FC<CompanyOverviewProps> = ({ overview, onRe
         </div>
 
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <button
+            onClick={onOpenIngest}
+            style={{ display: "flex", alignItems: "center", gap: "6px", background: "#0891b2", color: "#ffffff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+            title="Import your own company's microservices and architecture"
+          >
+            📥 Ingest Company Data
+          </button>
           <a
             href="http://localhost:3000"
             target="_blank"
@@ -40,7 +48,7 @@ export const CompanyOverview: React.FC<CompanyOverviewProps> = ({ overview, onRe
             style={{ display: "flex", alignItems: "center", gap: "6px", background: "#334155", color: "#f8fafc", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: isResetting ? "not-allowed" : "pointer" }}
             title="Reset to clean initial state with seeded policy conflict"
           >
-            <RotateCcw size={12} /> {isResetting ? "Resetting..." : "Reset Graph"}
+            <RotateCcw size={12} /> {isResetting ? "Resetting..." : "Reset Demo"}
           </button>
         </div>
       </div>

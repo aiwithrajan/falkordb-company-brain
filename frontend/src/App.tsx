@@ -5,6 +5,7 @@ import { InvestigationPanel } from "./components/InvestigationPanel";
 import { GraphCanvas } from "./components/GraphCanvas";
 import { NodeDetailDrawer } from "./components/NodeDetailDrawer";
 import { EvidenceModal } from "./components/EvidenceModal";
+import { IngestModal } from "./components/IngestModal";
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || "/api";
 
@@ -60,6 +61,7 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isIngestOpen, setIsIngestOpen] = useState(false);
 
   const fetchOverview = async () => {
     try {
@@ -130,7 +132,12 @@ export function App() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", padding: "16px", background: "#090d16", overflow: "hidden" }}>
       {/* Top Header & KPI Bar */}
-      <CompanyOverview overview={overview} onReset={handleReset} isResetting={isResetting} />
+      <CompanyOverview
+        overview={overview}
+        onReset={handleReset}
+        isResetting={isResetting}
+        onOpenIngest={() => setIsIngestOpen(true)}
+      />
 
       {/* Main Split Layout: Left 45% (Chat/Trace) | Right 55% (Graph Canvas) */}
       <div style={{ display: "grid", gridTemplateColumns: "45% 55%", gap: "16px", flex: 1, minHeight: 0 }}>
@@ -173,6 +180,16 @@ export function App() {
 
       {/* Slide-over Evidence Drawer */}
       <EvidenceModal sourceUri={evidenceUri} onClose={() => setEvidenceUri(null)} />
+
+      {/* Company Ingestion Wizard Modal */}
+      <IngestModal
+        isOpen={isIngestOpen}
+        onClose={() => setIsIngestOpen(false)}
+        onIngestSuccess={() => {
+          fetchOverview();
+          runInvestigation("Explain service architecture, ownership, and dependencies.");
+        }}
+      />
     </div>
   );
 }

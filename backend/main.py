@@ -55,8 +55,11 @@ def get_overview():
         """)
         dependency_graph = db.extract_subgraph([[r[0]] for r in full_sub_res.result_set])
 
+        company_res = db.query("MATCH (c:Company) RETURN c.name as name")
+        company_name = company_res.result_set[0][0] if company_res.result_set else "Nexora Cloud"
+
         return {
-            "company_name": "Nexora Cloud",
+            "company_name": company_name,
             "counts": {
                 "services": services_res.result_set[0][0] if services_res.result_set else 0,
                 "teams": teams_res.result_set[0][0] if teams_res.result_set else 0,
@@ -91,6 +94,28 @@ def reset_knowledge_graph():
     try:
         seed_nexora_company()
         return {"status": "success", "message": "Nexora Cloud graph re-seeded to initial state"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class IngestTextRequest(BaseModel):
+    text: str
+    company_name: Optional[str] = "Custom Company"
+
+from backend.ingestion import ingest_structured_company, ingest_text_architecture
+
+@app.post("/api/ingest/json")
+def ingest_json(data: Dict[str, Any]):
+    try:
+        res = ingest_structured_company(data)
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/ingest/text")
+def ingest_text(req: IngestTextRequest):
+    try:
+        res = ingest_text_architecture(req.text, req.company_name)
+        return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
