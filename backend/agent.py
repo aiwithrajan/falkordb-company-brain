@@ -114,6 +114,9 @@ class OrgMindAgent:
                 edge_signatures.add(sig)
                 subgraph_edges.append(edge)
 
+        for idx, edge in enumerate(subgraph_edges):
+            edge["id"] = f"edge_{idx}"
+
         aggregated_subgraph = {
             "nodes": list(subgraph_nodes.values()),
             "edges": subgraph_edges

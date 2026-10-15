@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
 import type { OverviewData, InvestigationResponse, GraphNode } from "./types";
 import { CompanyOverview } from "./components/CompanyOverview";
 import { InvestigationPanel } from "./components/InvestigationPanel";
@@ -7,6 +7,50 @@ import { NodeDetailDrawer } from "./components/NodeDetailDrawer";
 import { EvidenceModal } from "./components/EvidenceModal";
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || "/api";
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "20px", color: "#f87171", background: "#1e1b4b", borderRadius: "8px", margin: "20px" }}>
+          <h3>⚠️ Canvas Render Error</h3>
+          <p style={{ fontFamily: "monospace", fontSize: "12px", marginTop: "8px" }}>
+            {this.state.error?.message}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{ marginTop: "12px", background: "#3b82f6", color: "#fff", padding: "6px 12px", borderRadius: "4px" }}
+          >
+            Retry Render
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function App() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
@@ -54,7 +98,6 @@ export function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ claim_id: claimId, reviewed_by: "Alex Chen (VP Eng)" }),
       });
-      // Re-run investigation with updated graph
       if (investigation) {
         await runInvestigation(investigation.question);
       }
@@ -105,17 +148,19 @@ export function App() {
 
         {/* Right Side: Interactive Subgraph Visualizer */}
         <div style={{ position: "relative", height: "100%" }}>
-          {investigation?.subgraph ? (
-            <GraphCanvas
-              subgraph={investigation.subgraph}
-              onSelectNode={(node) => setSelectedNode(node)}
-              selectedNodeId={selectedNode?.id}
-            />
-          ) : (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#64748b" }}>
-              Loading FalkorDB Subgraph...
-            </div>
-          )}
+          <ErrorBoundary>
+            {investigation?.subgraph ? (
+              <GraphCanvas
+                subgraph={investigation.subgraph}
+                onSelectNode={(node) => setSelectedNode(node)}
+                selectedNodeId={selectedNode?.id}
+              />
+            ) : (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#64748b" }}>
+                Loading FalkorDB Subgraph...
+              </div>
+            )}
+          </ErrorBoundary>
 
           {/* Node Property Inspector Overlay */}
           <NodeDetailDrawer

@@ -69,8 +69,16 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
       }
     };
 
+    // Deduplicate nodes by id
+    const uniqueNodesMap = new Map();
+    for (const node of subgraph.nodes) {
+      if (!uniqueNodesMap.has(node.id)) {
+        uniqueNodesMap.set(node.id, node);
+      }
+    }
+
     const visNodes = new DataSet(
-      subgraph.nodes.map((node) => {
+      Array.from(uniqueNodesMap.values()).map((node) => {
         const colors = getNodeColor(node.type, node.properties);
         const isSelected = selectedNodeId === node.id;
         return {
@@ -102,12 +110,18 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
       })
     );
 
-    const visEdges = new DataSet(
-      subgraph.edges.map((edge) => {
+    // Deduplicate edges by signature and assign guaranteed unique edge IDs
+    const seenEdges = new Set<string>();
+    const safeEdges = [];
+    for (let i = 0; i < subgraph.edges.length; i++) {
+      const edge = subgraph.edges[i];
+      const sig = `${edge.source}-${edge.relation}->${edge.target}`;
+      if (!seenEdges.has(sig)) {
+        seenEdges.add(sig);
         const isConflict = edge.relation === "CONFLICTS_WITH";
         const isSuperseded = edge.relation === "SUPERSEDED_BY";
-        return {
-          id: edge.id,
+        safeEdges.push({
+          id: `edge_uniq_${i}_${edge.source}_${edge.target}`,
           from: edge.source,
           to: edge.target,
           label: edge.relation,
@@ -129,9 +143,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             type: "cubicBezier",
             roundness: 0.2,
           },
-        };
-      })
-    );
+        });
+      }
+    }
+
+    const visEdges = new DataSet(safeEdges);
 
     const options = {
       physics: {
