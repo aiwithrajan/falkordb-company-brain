@@ -24,14 +24,17 @@ class GraphDatabase:
         """
         Parses a query result set containing Nodes, Edges, and Paths,
         and aggregates them into unique nodes and edges for frontend visualization.
+        Ensures internal FalkorDB node IDs on edges are mapped to custom node 'id' properties.
         """
         nodes_dict: Dict[str, Dict[str, Any]] = {}
+        internal_id_to_key: Dict[int, str] = {}
         edges_list: List[Dict[str, Any]] = []
         edge_signatures = set()
 
         def process_node(n: Node):
             # Prefer 'id' property if present, otherwise fallback to internal FalkorDB id
             node_key = str(n.properties.get("id") or f"node_{n.id}")
+            internal_id_to_key[n.id] = node_key
             if node_key not in nodes_dict:
                 primary_label = n.labels[0] if n.labels else "Entity"
                 display_name = n.properties.get("name") or n.properties.get("title") or node_key
@@ -46,9 +49,8 @@ class GraphDatabase:
             return node_key
 
         def process_edge(e: Edge, src_key: Optional[str] = None, dest_key: Optional[str] = None):
-            # If src_key or dest_key aren't passed, map from internal node ids if available
-            s_key = src_key or f"node_{e.src_node}"
-            d_key = dest_key or f"node_{e.dest_node}"
+            s_key = src_key or internal_id_to_key.get(e.src_node, f"node_{e.src_node}")
+            d_key = dest_key or internal_id_to_key.get(e.dest_node, f"node_{e.dest_node}")
             edge_sig = f"{s_key}-{e.relation}->{d_key}"
             if edge_sig not in edge_signatures:
                 edge_signatures.add(edge_sig)
@@ -60,11 +62,19 @@ class GraphDatabase:
                     "properties": dict(e.properties)
                 })
 
+        # Pass 1: Process all nodes to establish internal ID mapping
         for row in result_set:
             for item in row:
                 if isinstance(item, Node):
                     process_node(item)
-                elif isinstance(item, Edge):
+                elif isinstance(item, Path):
+                    for pn in item.nodes():
+                        process_node(pn)
+
+        # Pass 2: Process all edges and paths with guaranteed node keys
+        for row in result_set:
+            for item in row:
+                if isinstance(item, Edge):
                     process_edge(item)
                 elif isinstance(item, Path):
                     path_nodes = item.nodes()

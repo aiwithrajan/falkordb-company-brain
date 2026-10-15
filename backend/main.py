@@ -48,12 +48,13 @@ def get_overview():
         conflicts_res = db.query("MATCH (c:Claim {status: 'active'})-[cf:CONFLICTS_WITH]->(c2:Claim) RETURN count(cf) as c")
         decisions_res = db.query("MATCH (d:Decision) RETURN count(d) as c")
 
-        # Full high-level company graph for overview visualizer
+        # Full high-level company graph for overview visualizer (all services & dependencies)
         full_sub_res = db.query("""
-            MATCH path = (s:Service)-[r:DEPENDS_ON]->(s2:Service)
-            RETURN path
+            MATCH (s:Service)
+            OPTIONAL MATCH (s)-[r:DEPENDS_ON]->(s2:Service)
+            RETURN s, r, s2
         """)
-        dependency_graph = db.extract_subgraph([[r[0]] for r in full_sub_res.result_set])
+        dependency_graph = db.extract_subgraph([[r[0], r[1], r[2]] for r in full_sub_res.result_set if r[0] is not None])
 
         company_res = db.query("MATCH (c:Company) RETURN c.name as name")
         company_name = company_res.result_set[0][0] if company_res.result_set else "Nexora Cloud"

@@ -65,3 +65,48 @@ def test_end_to_end_agent_investigation():
     assert "CRITICAL POLICY CONFLICT DETECTED" in result["answer"]
     assert result["pending_correction"] is not None
     assert len(result["subgraph"]["nodes"]) >= 8
+
+def test_incident_commander_and_architect_modes():
+    # 1. Incident Commander Mode
+    inc_res = agent.investigate("P0 Alert: payments-svc 500 cascade. Trace blast radius and mobilize responders.", mode="incident")
+    assert inc_res["mode"] == "incident"
+    assert "INCIDENT WAR-ROOM DISPATCH" in inc_res["answer"]
+    assert len(inc_res["subgraph"]["nodes"]) > 0
+
+    # 2. Staff Architect Mode
+    arch_res = agent.investigate("Review PR #318: Revert Payments auth to symmetric HMAC keys.", mode="architect")
+    assert arch_res["mode"] == "architect"
+    assert "PR BLOCKED BY ARCHITECTURAL DRIFT GUARD" in arch_res["answer"]
+    assert len(arch_res["subgraph"]["nodes"]) > 0
+
+def test_custom_company_ingestion_and_subgraph_integrity():
+    from backend.ingestion import ingest_structured_company
+    custom_spec = {
+        "company_name": "TestFlight Systems",
+        "teams": [{"id": "t_flight", "name": "Avionics Team"}],
+        "people": [{"id": "p_pilot", "name": "Captain Rogers", "role": "Chief Test Pilot"}],
+        "services": [
+            {"id": "svc_navigation", "name": "Navigation Core", "tier": 1, "criticality": "P0"},
+            {"id": "svc_telemetry", "name": "Telemetry Dispatch", "tier": 1, "criticality": "P0"}
+        ],
+        "dependencies": [
+            {"from": "svc_telemetry", "to": "svc_navigation", "protocol": "gRPC"}
+        ]
+    }
+    ingest_res = ingest_structured_company(custom_spec)
+    assert ingest_res["success"] is True
+
+    # Test edge-node key consistency in extract_subgraph
+    from backend.graph_db import db
+    overview_sub = db.query("MATCH (s:Service) OPTIONAL MATCH (s)-[r:DEPENDS_ON]->(s2:Service) RETURN s, r, s2")
+    sub = db.extract_subgraph([[r[0], r[1], r[2]] for r in overview_sub.result_set])
+    node_ids = {n["id"] for n in sub["nodes"]}
+    for edge in sub["edges"]:
+        assert edge["source"] in node_ids, f"Edge source {edge['source']} not found in node IDs"
+        assert edge["target"] in node_ids, f"Edge target {edge['target']} not found in node IDs"
+
+    # Test agent investigation on newly ingested company
+    res = agent.investigate("P0 Alert: navigation failure cascade", mode="incident")
+    assert res["target_service"] == "svc_navigation"
+    assert len(res["subgraph"]["nodes"]) > 0
+
