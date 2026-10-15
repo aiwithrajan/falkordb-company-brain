@@ -71,14 +71,14 @@ export function App() {
     }
   };
 
-  const runInvestigation = async (question: string) => {
+  const runInvestigation = async (question: string, mode?: string) => {
     setIsLoading(true);
     setSelectedNode(null);
     try {
       const res = await fetch(`${API_BASE}/investigate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, mode }),
       });
       const data = await res.json();
       setInvestigation(data);

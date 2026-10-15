@@ -58,6 +58,7 @@ export interface Expert {
 
 export interface InvestigationResponse {
   question: string;
+  mode?: "overview" | "incident" | "architect";
   target_service: string;
   answer: string;
   tool_traces: ToolTrace[];

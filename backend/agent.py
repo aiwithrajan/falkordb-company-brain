@@ -6,7 +6,9 @@ from backend.tools import (
     find_related_incidents,
     find_claim_conflicts,
     find_relevant_experts,
-    apply_knowledge_correction
+    apply_knowledge_correction,
+    simulate_pr_drift,
+    generate_incident_war_room
 )
 from backend.graph_db import db
 
@@ -14,11 +16,13 @@ class OrgMindAgent:
     def __init__(self):
         pass
 
-    def investigate(self, question: str) -> Dict[str, Any]:
+    def investigate(self, question: str, mode: Optional[str] = None) -> Dict[str, Any]:
         """
         Executes a deterministic, multi-tool investigation workflow across FalkorDB.
-        Returns a structured evidence packet, synthesized answer, tool execution trace,
-        and an aggregated subgraph for interactive visualization.
+        Supports:
+        - Mode 'incident': Outage triage, blast radius, historical post-mortems, on-call squad dispatch.
+        - Mode 'architect': PR drift check, ADR-042 provenance, policy violation guard.
+        - Mode 'overview' (default): Full cross-company knowledge investigation.
         """
         tool_traces = []
 
@@ -84,7 +88,68 @@ class OrgMindAgent:
             "explanation": f"Top domain expert identified: {experts[0]['name'] if experts else 'None'}"
         })
 
-        # Step 7: Build Aggregated Subgraph for UI Canvas
+        # Mode Detection: explicit mode, or auto-detect from query keywords
+        q_lower = question.lower()
+        active_mode = mode or (
+            "incident" if any(w in q_lower for w in ["outage", "triage", "p0", "commander", "emergency"])
+            else "architect" if any(w in q_lower for w in ["pr", "drift", "review", "revert", "pull request", "architect"])
+            else "overview"
+        )
+
+        if active_mode == "incident":
+            war_room = generate_incident_war_room(target_service, question)
+            tool_traces.append({
+                "tool": "generate_incident_war_room",
+                "input": {"service_id": target_service, "alert": question},
+                "output": {"commander": war_room["squad"]["commander"]["name"] if war_room["squad"]["commander"] else None},
+                "explanation": f"Mobilized incident squad and computed blast radius"
+            })
+            return {
+                "question": question,
+                "mode": "incident",
+                "target_service": target_service,
+                "answer": war_room["war_room_dispatch"],
+                "tool_traces": tool_traces,
+                "subgraph": war_room["subgraph"],
+                "ownership": ownership,
+                "dependencies": dep_data,
+                "incidents": incidents,
+                "conflict_data": conflict_data,
+                "experts": experts,
+                "pending_correction": None
+            }
+
+        elif active_mode == "architect":
+            drift = simulate_pr_drift(target_service, "Revert payments-svc to legacy symmetric AUTH-V1 HMAC keys", "PR #318: Revert Payments Auth")
+            tool_traces.append({
+                "tool": "simulate_pr_drift",
+                "input": {"service_id": target_service, "change": "Revert to AUTH-V1"},
+                "output": drift["violations"],
+                "explanation": f"Blocked PR: detected regression against {drift['violations'][0]['decision_title']}"
+            })
+            return {
+                "question": question,
+                "mode": "architect",
+                "target_service": target_service,
+                "answer": drift["review_comment"],
+                "tool_traces": tool_traces,
+                "subgraph": drift["subgraph"],
+                "ownership": ownership,
+                "dependencies": dep_data,
+                "incidents": incidents,
+                "conflict_data": conflict_data,
+                "experts": experts,
+                "pending_correction": {
+                    "claim_id": "clm_auth_v1",
+                    "stale_value": "AUTH-V1 (HMAC symmetric shared key)",
+                    "approved_value": "AUTH-V2 (RS256 asymmetric token rotation)",
+                    "source_doc_a": "DOC-RFC-102",
+                    "source_doc_b": "DOC-DEC-042 (ADR-042)",
+                    "recommended_action": "Mark clm_auth_v1 as SUPERSEDED to align graph with approved ADR-042."
+                } if conflict_data["has_conflict"] else None
+            }
+
+        # Step 7: Build Aggregated Subgraph for UI Canvas (Overview Mode)
         # Merge nodes & edges from dependencies and conflicts
         subgraph_nodes = {}
         subgraph_edges = []

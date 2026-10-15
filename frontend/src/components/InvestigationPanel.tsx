@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import type { InvestigationResponse } from "../types";
-import { Search, ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Sparkles, BookOpen } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Sparkles, BookOpen, ShieldAlert, Scale, Brain } from "lucide-react";
 
 interface InvestigationPanelProps {
-  onInvestigate: (question: string) => void;
+  onInvestigate: (question: string, mode?: string) => void;
   isLoading: boolean;
   investigation: InvestigationResponse | null;
   onApproveCorrection: (claimId: string) => void;
@@ -19,20 +19,28 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
   isApproving,
   onOpenEvidence,
 }) => {
+  const [activeTab, setActiveTab] = useState<"overview" | "incident" | "architect">("overview");
   const [inputQuestion, setInputQuestion] = useState(
     "Explain how Payments works, who owns it, and what could be affected if Identity authentication changes."
   );
   const [openTraceIndex, setOpenTraceIndex] = useState<number | null>(null);
 
-  const sampleQuestions = [
-    "Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.",
-    "Who are the documented experts and incident responders for Payments Service?",
-    "Detect policy conflicts and unapproved cryptographic protocols.",
-  ];
+  const modePresets = {
+    overview: "Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.",
+    incident: "P0 Alert: payments-svc 500 auth cascade. Trace blast radius, historical precedents, and mobilize responders.",
+    architect: "Review PR #318: Revert Payments authentication to symmetric HMAC key headers. Check architectural drift."
+  };
+
+  const handleSelectMode = (mode: "overview" | "incident" | "architect") => {
+    setActiveTab(mode);
+    const q = modePresets[mode];
+    setInputQuestion(q);
+    onInvestigate(q, mode);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputQuestion.trim()) onInvestigate(inputQuestion);
+    if (inputQuestion.trim()) onInvestigate(inputQuestion, activeTab);
   };
 
   return (
@@ -46,6 +54,69 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
         paddingRight: "6px",
       }}
     >
+      {/* 3-Mode Enterprise Switcher */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", background: "#0b1222", padding: "4px", borderRadius: "8px", border: "1px solid #1e293b" }}>
+        <button
+          type="button"
+          onClick={() => handleSelectMode("overview")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            padding: "8px 6px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            fontWeight: activeTab === "overview" ? 600 : 400,
+            background: activeTab === "overview" ? "#0891b2" : "transparent",
+            color: activeTab === "overview" ? "#ffffff" : "#94a3b8",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Brain size={14} /> Company Brain
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectMode("incident")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            padding: "8px 6px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            fontWeight: activeTab === "incident" ? 600 : 400,
+            background: activeTab === "incident" ? "#dc2626" : "transparent",
+            color: activeTab === "incident" ? "#ffffff" : "#94a3b8",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <ShieldAlert size={14} /> Incident Commander
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectMode("architect")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            padding: "8px 6px",
+            borderRadius: "6px",
+            fontSize: "12px",
+            fontWeight: activeTab === "architect" ? 600 : 400,
+            background: activeTab === "architect" ? "#7c3aed" : "transparent",
+            color: activeTab === "architect" ? "#ffffff" : "#94a3b8",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <Scale size={14} /> Staff Architect
+        </button>
+      </div>
+
       {/* Query Input Box */}
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <div style={{ position: "relative" }}>
@@ -69,34 +140,15 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-            {sampleQuestions.map((q, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  setInputQuestion(q);
-                  onInvestigate(q);
-                }}
-                style={{
-                  background: "#1e293b",
-                  color: "#94a3b8",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  fontSize: "11px",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Demo #{idx + 1}
-              </button>
-            ))}
-          </div>
+          <span style={{ fontSize: "11px", color: "#64748b" }}>
+            Active Mode: <strong style={{ color: activeTab === "incident" ? "#f87171" : activeTab === "architect" ? "#a78bfa" : "#38bdf8" }}>{activeTab.toUpperCase()}</strong>
+          </span>
 
           <button
             type="submit"
             disabled={isLoading}
             style={{
-              background: "#0891b2",
+              background: activeTab === "incident" ? "#dc2626" : activeTab === "architect" ? "#7c3aed" : "#0891b2",
               color: "#ffffff",
               padding: "8px 16px",
               borderRadius: "6px",
@@ -108,7 +160,7 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
               cursor: isLoading ? "not-allowed" : "pointer",
             }}
           >
-            <Search size={14} /> {isLoading ? "Traversing Graph..." : "Investigate"}
+            <Search size={14} /> {isLoading ? "Traversing FalkorDB..." : "Run Mode Triage"}
           </button>
         </div>
       </form>
@@ -179,7 +231,7 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
         </div>
       )}
 
-      {/* Synthesized Answer Output */}
+      {/* Synthesized Output */}
       {investigation && (
         <div
           style={{
@@ -193,8 +245,8 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1e293b", paddingBottom: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#38bdf8", fontWeight: 600, fontSize: "13px" }}>
-              <Sparkles size={16} /> Verifiable Graph Findings
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", color: activeTab === "incident" ? "#f87171" : activeTab === "architect" ? "#a78bfa" : "#38bdf8", fontWeight: 600, fontSize: "13px" }}>
+              <Sparkles size={16} /> {activeTab === "incident" ? "Incident War-Room Briefing" : activeTab === "architect" ? "Architectural Drift Review" : "Verifiable Graph Findings"}
             </div>
             <span style={{ fontSize: "11px", color: "#64748b" }}>Target: {investigation.target_service}</span>
           </div>

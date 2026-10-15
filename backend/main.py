@@ -24,6 +24,7 @@ app.add_middleware(
 
 class InvestigateRequest(BaseModel):
     question: str
+    mode: Optional[str] = None
 
 class CorrectionRequest(BaseModel):
     claim_id: str
@@ -72,7 +73,7 @@ def get_overview():
 @app.post("/api/investigate")
 def investigate(req: InvestigateRequest):
     try:
-        result = agent.investigate(req.question)
+        result = agent.investigate(req.question, mode=req.mode)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
