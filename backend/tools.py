@@ -2,10 +2,12 @@ from typing import Any, Dict, List, Optional
 import os
 from backend.graph_db import db
 
+import re
+
 def resolve_entities(question: str) -> Dict[str, Any]:
     """
-    Scans query text to resolve key entity IDs in Nexora Cloud.
-    Deterministic entity resolution fallback with fuzzy keyword matching.
+    Scans query text to resolve key entity IDs in the active company graph.
+    Dynamically checks services in FalkorDB first, with intelligent keyword fallback.
     """
     q = question.lower()
     entities = {
@@ -14,24 +16,59 @@ def resolve_entities(question: str) -> Dict[str, Any]:
         "topics": []
     }
 
-    service_map = {
-        "payment": "svc_payments",
-        "payments": "svc_payments",
-        "identity": "svc_identity",
-        "auth": "svc_identity",
-        "billing": "svc_billing",
-        "checkout": "svc_checkout",
-        "ledger": "svc_ledger",
-        "notification": "svc_notification"
-    }
+    # 1. Fetch available services dynamically from active FalkorDB graph
+    active_services = []
+    try:
+        svc_res = db.query("MATCH (s:Service) RETURN s.id as id, s.name as name")
+        active_services = [(r[0], (r[1] or "").lower(), r[0].lower()) for r in svc_res.result_set]
+    except Exception:
+        active_services = []
 
-    for keyword, svc_id in service_map.items():
-        if keyword in q and svc_id not in entities["services"]:
-            entities["services"].append(svc_id)
+    # 2. Try matching against services currently in DB, recording earliest appearance index
+    service_positions = {}
+    for svc_id, svc_name, svc_id_lower in active_services:
+        clean_name_words = [w for w in re.split(r"[\s\-_]+", svc_name) if len(w) > 2]
+        clean_id_words = [w for w in re.split(r"[\s\-_]+", svc_id_lower) if len(w) > 2 and w != "svc"]
+        pos = -1
+        if svc_id_lower in q:
+            pos = q.find(svc_id_lower)
+        else:
+            for w in clean_name_words + clean_id_words:
+                idx = q.find(w)
+                if idx != -1 and (pos == -1 or idx < pos):
+                    pos = idx
+        if pos != -1:
+            service_positions[svc_id] = pos
 
-    if not entities["services"]:
-        # default to payments if context implies transactional flow
-        entities["services"].append("svc_payments")
+    if service_positions:
+        # Prioritize the service that appears earliest in the sentence
+        entities["services"] = sorted(service_positions.keys(), key=lambda k: service_positions[k])
+
+    # 3. If nothing matched directly, check if generic query keywords match any service in DB
+    if not entities["services"] and active_services:
+        if "payment" in q or "pay" in q:
+            match = next((s[0] for s in active_services if "pay" in s[0] or "pay" in s[1]), None)
+            if match: entities["services"].append(match)
+        elif "order" in q or "cart" in q:
+            match = next((s[0] for s in active_services if "order" in s[0] or "order" in s[1]), None)
+            if match: entities["services"].append(match)
+        elif "auth" in q or "ident" in q:
+            match = next((s[0] for s in active_services if "auth" in s[0] or "ident" in s[0] or "auth" in s[1]), None)
+            if match: entities["services"].append(match)
+        elif "checkout" in q:
+            match = next((s[0] for s in active_services if "checkout" in s[0] or "checkout" in s[1]), None)
+            if match: entities["services"].append(match)
+
+    # 4. Default fallback: Pick the first P0 service in the database, or the first service
+    if not entities["services"] and active_services:
+        try:
+            p0_res = db.query("MATCH (s:Service) WHERE s.criticality = 'P0' OR s.tier = 1 RETURN s.id as id LIMIT 1")
+            if p0_res.result_set:
+                entities["services"].append(p0_res.result_set[0][0])
+            else:
+                entities["services"].append(active_services[0][0])
+        except Exception:
+            entities["services"].append(active_services[0][0])
 
     if "auth" in q or "token" in q or "protocol" in q:
         entities["topics"].append("auth_protocol")
@@ -331,9 +368,18 @@ def simulate_pr_drift(service_id: str, proposed_change: str, pr_title: str) -> D
         })
 
     subgraph = db.extract_subgraph(subgraph_rows)
+    if not subgraph.get("nodes"):
+        all_svc = db.query("MATCH (s:Service) OPTIONAL MATCH (s)-[r:DEPENDS_ON]->(s2:Service) RETURN s, r, s2")
+        subgraph = db.extract_subgraph([[r[0], r[1], r[2]] for r in all_svc.result_set])
 
     # Automated GitHub PR review comment
-    v = drift_violations[0] if drift_violations else {}
+    v = drift_violations[0] if drift_violations else {
+        "decision_title": "ADR-042: Mandate Asymmetric Token Standards",
+        "authored_by": "Marcus Vance (Principal Architect)",
+        "approved_by": "Alex Chen (VP Eng)",
+        "root_incident": "INC-8812",
+        "incident_summary": "Legacy shared key desynchronization outage"
+    }
     pr_review_comment = (
         f"### ❌ PR BLOCKED BY ARCHITECTURAL DRIFT GUARD\n\n"
         f"**Proposed Change**: *\"{proposed_change}\"* in `{service_id}`\n\n"
@@ -342,9 +388,9 @@ def simulate_pr_drift(service_id: str, proposed_change: str, pr_title: str) -> D
         f"- Author: **{v.get('authored_by', 'Marcus Vance')}** | Approved By: **{v.get('approved_by', 'Alex Chen (VP Eng)')}**\n\n"
         f"**2. Historical Outage Regression Alert**\n"
         f"- This decision was ratified to prevent recurrence of **{v.get('root_incident', 'INC-8812')}**: *\"{v.get('incident_summary')}\"*.\n"
-        f"- Reverting to symmetric HMAC keys introduces known token-expiration failure loops in production.\n\n"
+        f"- Reverting to legacy auth introduces known token-expiration failure loops in production.\n\n"
         f"**3. Required Sign-Offs**\n"
-        f"- To bypass this guard, approvals are required from: **{v.get('approved_by')}** (VP Eng) and **{v.get('authored_by')}** (Principal Architect).\n"
+        f"- To bypass this guard, approvals are required from: **{v.get('approved_by')}** and **{v.get('authored_by')}**.\n"
     )
 
     return {
@@ -368,40 +414,77 @@ def generate_incident_war_room(service_id: str, alert_summary: str) -> Dict[str,
     experts = find_relevant_experts(service_id)
 
     downstream_impact = [f"`{s['name']}` ({s.get('criticality', 'P1')})" for s in deps["downstream_impact_blast_radius"]]
-    downstream_str = ", ".join(downstream_impact) if downstream_impact else "None detected"
+    downstream_str = ", ".join(downstream_impact) if downstream_impact else "None detected (Edge service)"
 
     similar_inc = incidents[0] if incidents else None
-    top_commander = next((e for e in experts if "Commander" in str(e["evidence"])), experts[0] if experts else None)
-    service_sme = next((e for e in experts if "Owner" in str(e["evidence"])), None)
-    sre_oncall = next((e for e in experts if "SRE" in str(e["evidence"])), None)
+    top_commander = next((e for e in experts if "Commander" in str(e.get("evidence", []))), experts[0] if experts else None)
+    service_sme = next((e for e in experts if "Owner" in str(e.get("evidence", []))), (experts[1] if len(experts) > 1 else experts[0] if experts else None))
+    sre_oncall = next((e for e in experts if "SRE" in str(e.get("evidence", []))), (experts[2] if len(experts) > 2 else experts[0] if experts else None))
+
+    if similar_inc:
+        similar_inc_str = (
+            f"- 95% Match with **{similar_inc.get('id', 'INC-8812')}** ({similar_inc.get('severity', 'P0')}) "
+            f"on `{similar_inc.get('occurred_at', '2026')}`: *\"{similar_inc.get('summary', 'Outage')}\"*.\n"
+            f"- Primary Runbook: Check authentication key rotation and token cache.\n"
+        )
+    else:
+        similar_inc_str = (
+            f"- No historical precedent found for service `{service_id}`. Initial incident runbook activated from Tier-1 playbooks.\n"
+        )
+
+    commander_name = top_commander['name'] if top_commander else "On-Call Incident Lead"
+    commander_role = top_commander.get('role', 'SRE Incident Commander') if top_commander else "Site Reliability Engineering"
+    sme_name = service_sme['name'] if service_sme else (experts[0]['name'] if experts else "Lead Engineer")
+    sme_role = service_sme.get('role', 'Domain SME') if service_sme else "Service Maintainer"
+    sre_name = sre_oncall['name'] if sre_oncall else (experts[1]['name'] if len(experts) > 1 else "Primary On-Call")
+    sre_role = sre_oncall.get('role', 'SRE Lead') if sre_oncall else "SRE Infrastructure"
 
     war_room_dispatch = (
         f"### 🚨 INCIDENT WAR-ROOM DISPATCH: [P0] {service_id.upper()}\n\n"
         f"**Alert**: *\"{alert_summary}\"*\n\n"
         f"**1. Downstream Impact Blast Radius (Immediate Risk)**\n"
         f"- Critical Services At Risk: {downstream_str}\n"
-        f"- Failure Mode: Immediate customer checkout failure and ledger reconciliation blockage.\n\n"
+        f"- Failure Mode: Immediate customer impact and transactional flow disruption.\n\n"
         f"**2. Historical Precedent & Root-Cause Lead**\n"
-        f"- 95% Match with **{similar_inc['id']}** ({similar_inc['severity']}) on `{similar_inc['occurred_at']}`: *\"{similar_inc['summary']}\"*.\n"
-        f"- Primary Runbook: Check asymmetric token rotation buffer in Identity Service.\n\n"
+        f"{similar_inc_str}\n"
         f"**3. Mobilized Response Squad (Automated PagerDuty Call)**\n"
-        f"- 🎯 **Incident Commander**: **{top_commander['name']}** ({top_commander['role']})\n"
-        f"- 🛠️ **Service Owner SME**: **{service_sme['name']}** ({service_sme['role']})\n"
-        f"- ⚙️ **SRE Lead**: **{sre_oncall['name']}** ({sre_oncall['role']})\n"
+        f"- 🎯 **Incident Commander**: **{commander_name}** ({commander_role})\n"
+        f"- 🛠️ **Service Owner SME**: **{sme_name}** ({sme_role})\n"
+        f"- ⚙️ **SRE Lead**: **{sre_name}** ({sre_role})\n"
     )
+
+    # Subgraph generation: guarantee nodes exist
+    subgraph = deps.get("subgraph", {"nodes": [], "edges": []})
+    if not subgraph.get("nodes"):
+        fallback_res = db.query("""
+            MATCH (s:Service {id: $service_id})
+            OPTIONAL MATCH (t:Team)-[:OWNS]->(s)
+            OPTIONAL MATCH (p:Person)-[:OWNS]->(s)
+            OPTIONAL MATCH (s)-[r:DEPENDS_ON]->(dep:Service)
+            OPTIONAL MATCH (src:Service)-[r2:DEPENDS_ON]->(s)
+            RETURN s, t, p, r, dep, r2, src
+        """, {"service_id": service_id})
+        sub_rows = []
+        for r in fallback_res.result_set:
+            sub_rows.append([x for x in r if x is not None])
+        subgraph = db.extract_subgraph(sub_rows)
+
+    if not subgraph.get("nodes"):
+        all_svc = db.query("MATCH (s:Service) OPTIONAL MATCH (s)-[r:DEPENDS_ON]->(s2:Service) RETURN s, r, s2")
+        subgraph = db.extract_subgraph([[r[0], r[1], r[2]] for r in all_svc.result_set])
 
     return {
         "status": "DISPATCHED",
         "service_id": service_id,
         "alert_summary": alert_summary,
-        "downstream_impact": deps["downstream_impact_blast_radius"],
+        "downstream_impact": deps.get("downstream_impact_blast_radius", []),
         "similar_incident": similar_inc,
         "squad": {
-            "commander": top_commander,
-            "owner_sme": service_sme,
-            "sre": sre_oncall
+            "commander": top_commander or {"name": commander_name, "role": commander_role},
+            "owner_sme": service_sme or {"name": sme_name, "role": sme_role},
+            "sre": sre_oncall or {"name": sre_name, "role": sre_role}
         },
         "war_room_dispatch": war_room_dispatch,
-        "subgraph": deps.get("subgraph", {"nodes": [], "edges": []})
+        "subgraph": subgraph
     }
 

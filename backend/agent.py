@@ -98,10 +98,11 @@ class OrgMindAgent:
 
         if active_mode == "incident":
             war_room = generate_incident_war_room(target_service, question)
+            commander_info = war_room.get("squad", {}).get("commander", {})
             tool_traces.append({
                 "tool": "generate_incident_war_room",
                 "input": {"service_id": target_service, "alert": question},
-                "output": {"commander": war_room["squad"]["commander"]["name"] if war_room["squad"]["commander"] else None},
+                "output": {"commander": commander_info.get("name") if isinstance(commander_info, dict) else str(commander_info)},
                 "explanation": f"Mobilized incident squad and computed blast radius"
             })
             return {
@@ -121,11 +122,12 @@ class OrgMindAgent:
 
         elif active_mode == "architect":
             drift = simulate_pr_drift(target_service, "Revert payments-svc to legacy symmetric AUTH-V1 HMAC keys", "PR #318: Revert Payments Auth")
+            first_v = drift.get("violations", [{}])[0] if drift.get("violations") else {}
             tool_traces.append({
                 "tool": "simulate_pr_drift",
                 "input": {"service_id": target_service, "change": "Revert to AUTH-V1"},
                 "output": drift["violations"],
-                "explanation": f"Blocked PR: detected regression against {drift['violations'][0]['decision_title']}"
+                "explanation": f"Blocked PR: detected regression against {first_v.get('decision_title', 'Architecture Standards')}"
             })
             return {
                 "question": question,

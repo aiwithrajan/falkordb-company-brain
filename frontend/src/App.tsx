@@ -173,9 +173,15 @@ export function App() {
         {/* Right Side: Interactive Subgraph Visualizer */}
         <div style={{ position: "sticky", top: "16px", height: "calc(100vh - 220px)", minHeight: "560px" }}>
           <ErrorBoundary>
-            {investigation?.subgraph ? (
+            {(investigation?.subgraph && investigation.subgraph.nodes && investigation.subgraph.nodes.length > 0) ? (
               <GraphCanvas
                 subgraph={investigation.subgraph}
+                onSelectNode={(node) => setSelectedNode(node)}
+                selectedNodeId={selectedNode?.id}
+              />
+            ) : (overview?.dependency_graph && overview.dependency_graph.nodes && overview.dependency_graph.nodes.length > 0) ? (
+              <GraphCanvas
+                subgraph={overview.dependency_graph}
                 onSelectNode={(node) => setSelectedNode(node)}
                 selectedNodeId={selectedNode?.id}
               />
