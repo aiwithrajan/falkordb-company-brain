@@ -12,7 +12,8 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({ sourceUri, onClose
   useEffect(() => {
     if (!sourceUri) return;
     setContent("Fetching source evidence from disk...");
-    fetch(`http://localhost:8000/api/evidence/${sourceUri}`)
+    const apiBase = (import.meta as any).env?.VITE_API_URL || "/api";
+    fetch(`${apiBase}/evidence/${sourceUri}`)
       .then((res) => res.json())
       .then((data) => setContent(data.content || "No content found."))
       .catch((err) => setContent(`Error loading document: ${err.message}`));

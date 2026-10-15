@@ -21,8 +21,8 @@ fi
 echo "2. Seeding initial Nexora Cloud Knowledge Graph..."
 PYTHONPATH="$ROOT_DIR" "$ROOT_DIR/venv/bin/python3" "$ROOT_DIR/backend/seed_data.py"
 
-echo "3. Starting FastAPI Backend Server on port 8000..."
-PYTHONPATH="$ROOT_DIR" "$ROOT_DIR/venv/bin/uvicorn" backend.main:app --host 0.0.0.0 --port 8000 &
+echo "3. Starting FastAPI Backend Server on port 8001..."
+PYTHONPATH="$ROOT_DIR" "$ROOT_DIR/venv/bin/uvicorn" backend.main:app --host 0.0.0.0 --port 8001 &
 BACKEND_PID=$!
 
 echo "4. Starting Vite React Frontend Console on port 5173..."
@@ -34,7 +34,7 @@ echo ""
 echo "=========================================================="
 echo "  OrgMind is LIVE!"
 echo "  - Web Console:      http://localhost:5173"
-echo "  - Backend API:      http://localhost:8000/docs"
+echo "  - Backend API:      http://localhost:8001/docs"
 echo "  - FalkorDB Browser: http://localhost:3000"
 echo "=========================================================="
 echo "Press Ctrl+C to stop all services."

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: orgmind
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: FALKORDB_HOST
+        sync: false
+      - key: FALKORDB_PORT
+        value: 6379
+      - key: GRAPH_NAME
+        value: NexoraOrgMind

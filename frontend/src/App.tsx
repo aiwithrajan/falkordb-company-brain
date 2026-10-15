@@ -6,7 +6,7 @@ import { GraphCanvas } from "./components/GraphCanvas";
 import { NodeDetailDrawer } from "./components/NodeDetailDrawer";
 import { EvidenceModal } from "./components/EvidenceModal";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = (import.meta as any).env?.VITE_API_URL || "/api";
 
 export function App() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
