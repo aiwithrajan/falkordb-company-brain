@@ -199,6 +199,7 @@ class OrgMindAgent:
 
         return {
             "question": question,
+            "mode": "overview",
             "target_service": target_service,
             "answer": answer,
             "tool_traces": tool_traces,

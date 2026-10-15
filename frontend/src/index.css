@@ -40,20 +40,20 @@ input, textarea {
   outline: none;
 }
 
-/* Custom sleek scrollbar */
+/* Custom sleek, visible scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: #090d16;
 }
 ::-webkit-scrollbar-thumb {
   background: #334155;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #64748b;
 }
 
 /* Pulse animation for active conflict nodes */

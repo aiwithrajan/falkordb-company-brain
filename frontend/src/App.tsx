@@ -63,6 +63,19 @@ export function App() {
   const [isResetting, setIsResetting] = useState(false);
   const [isIngestOpen, setIsIngestOpen] = useState(false);
 
+  const [activeMode, setActiveMode] = useState<"overview" | "incident" | "architect">("overview");
+
+  const modePrompts = {
+    overview: "Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.",
+    incident: "P0 Alert: payments-svc 500 auth cascade. Trace blast radius, historical precedents, and mobilize responders.",
+    architect: "Review PR #318: Revert Payments authentication to symmetric HMAC key headers. Check architectural drift."
+  };
+
+  const handleSelectMode = (mode: "overview" | "incident" | "architect") => {
+    setActiveMode(mode);
+    runInvestigation(modePrompts[mode], mode);
+  };
+
   const fetchOverview = async () => {
     try {
       const res = await fetch(`${API_BASE}/overview`);
@@ -76,11 +89,12 @@ export function App() {
   const runInvestigation = async (question: string, mode?: string) => {
     setIsLoading(true);
     setSelectedNode(null);
+    if (mode) setActiveMode(mode as any);
     try {
       const res = await fetch(`${API_BASE}/investigate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, mode }),
+        body: JSON.stringify({ question, mode: mode || activeMode }),
       });
       const data = await res.json();
       setInvestigation(data);
@@ -101,7 +115,7 @@ export function App() {
         body: JSON.stringify({ claim_id: claimId, reviewed_by: "Alex Chen (VP Eng)" }),
       });
       if (investigation) {
-        await runInvestigation(investigation.question);
+        await runInvestigation(investigation.question, activeMode);
       }
       fetchOverview();
     } catch (err) {
@@ -116,7 +130,8 @@ export function App() {
     try {
       await fetch(`${API_BASE}/reset`, { method: "POST" });
       await fetchOverview();
-      await runInvestigation("Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.");
+      setActiveMode("overview");
+      await runInvestigation("Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.", "overview");
     } catch (err) {
       console.error("Failed to reset graph:", err);
     } finally {
@@ -126,23 +141,25 @@ export function App() {
 
   useEffect(() => {
     fetchOverview();
-    runInvestigation("Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.");
+    runInvestigation("Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.", "overview");
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", padding: "16px", background: "#090d16", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", padding: "16px", background: "#090d16", overflowY: "auto", overflowX: "hidden" }}>
       {/* Top Header & KPI Bar */}
       <CompanyOverview
         overview={overview}
         onReset={handleReset}
         isResetting={isResetting}
         onOpenIngest={() => setIsIngestOpen(true)}
+        activeMode={activeMode}
+        onSelectMode={handleSelectMode}
       />
 
-      {/* Main Split Layout: Left 45% (Chat/Trace) | Right 55% (Graph Canvas) */}
-      <div style={{ display: "grid", gridTemplateColumns: "45% 55%", gap: "16px", flex: 1, minHeight: 0 }}>
+      {/* Main Split Layout: Left 46% (Investigation Panel) | Right 54% (Graph Canvas) */}
+      <div style={{ display: "grid", gridTemplateColumns: "46% 54%", gap: "16px", flex: 1, minHeight: "calc(100vh - 220px)", height: "auto" }}>
         {/* Left Side: Ask the Company & Investigation Trace */}
-        <div style={{ height: "100%", overflow: "hidden" }}>
+        <div style={{ height: "calc(100vh - 220px)", minHeight: "560px", overflowY: "auto", paddingRight: "8px" }}>
           <InvestigationPanel
             onInvestigate={runInvestigation}
             isLoading={isLoading}
@@ -154,7 +171,7 @@ export function App() {
         </div>
 
         {/* Right Side: Interactive Subgraph Visualizer */}
-        <div style={{ position: "relative", height: "100%" }}>
+        <div style={{ position: "sticky", top: "16px", height: "calc(100vh - 220px)", minHeight: "560px" }}>
           <ErrorBoundary>
             {investigation?.subgraph ? (
               <GraphCanvas

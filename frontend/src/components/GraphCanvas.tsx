@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
 import type { GraphNode, Subgraph } from "../types";
-import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2, Layers } from "lucide-react";
 
 interface GraphCanvasProps {
   subgraph: Subgraph;
@@ -17,6 +17,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
+  const [filterType, setFilterType] = useState<"all" | "services" | "incidents" | "governance">("all");
 
   useEffect(() => {
     if (!containerRef.current || !subgraph || subgraph.nodes.length === 0) return;
@@ -70,15 +71,27 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     };
 
     // Deduplicate nodes by id
-    const uniqueNodesMap = new Map();
+    const uniqueNodesMap = new Map<string, GraphNode>();
     for (const node of subgraph.nodes) {
       if (!uniqueNodesMap.has(node.id)) {
         uniqueNodesMap.set(node.id, node);
       }
     }
 
+    // Filter nodes according to filterType
+    let candidateNodes = Array.from(uniqueNodesMap.values());
+    if (filterType === "services") {
+      candidateNodes = candidateNodes.filter(n => n.type === "Service");
+    } else if (filterType === "incidents") {
+      candidateNodes = candidateNodes.filter(n => ["Incident", "Person", "Service"].includes(n.type));
+    } else if (filterType === "governance") {
+      candidateNodes = candidateNodes.filter(n => ["Decision", "Policy", "Claim", "Document"].includes(n.type));
+    }
+
+    const candidateIds = new Set(candidateNodes.map(n => n.id));
+
     const visNodes = new DataSet(
-      Array.from(uniqueNodesMap.values()).map((node) => {
+      candidateNodes.map((node) => {
         const colors = getNodeColor(node.type, node.properties);
         const isSelected = selectedNodeId === node.id;
         return {
@@ -110,11 +123,14 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
       })
     );
 
-    // Deduplicate edges by signature and assign guaranteed unique edge IDs
+    // Deduplicate edges and filter to only edges between visible candidate nodes
     const seenEdges = new Set<string>();
     const safeEdges = [];
     for (let i = 0; i < subgraph.edges.length; i++) {
       const edge = subgraph.edges[i];
+      if (!candidateIds.has(edge.source) || !candidateIds.has(edge.target)) {
+        continue;
+      }
       const sig = `${edge.source}-${edge.relation}->${edge.target}`;
       if (!seenEdges.has(sig)) {
         seenEdges.add(sig);
@@ -187,7 +203,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     return () => {
       network.destroy();
     };
-  }, [subgraph, selectedNodeId]);
+  }, [subgraph, selectedNodeId, filterType]);
 
   const handleZoomIn = () => {
     if (!networkRef.current) return;
@@ -207,9 +223,115 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   };
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", background: "#0c1322", borderRadius: "8px", overflow: "hidden", border: "1px solid #1e293b" }}>
-      {/* Top Overlay Legend */}
-      <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10, display: "flex", gap: "8px", flexWrap: "wrap", background: "rgba(15, 23, 42, 0.85)", padding: "6px 12px", borderRadius: "6px", backdropFilter: "blur(6px)", border: "1px solid #334155", fontSize: "11px" }}>
+    <div style={{ position: "relative", width: "100%", height: "100%", background: "#0c1322", borderRadius: "8px", overflow: "hidden", border: "1px solid #1e293b", display: "flex", flexDirection: "column" }}>
+      
+      {/* TOPBAR: Title, Counter & Filter Chips */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "8px 12px",
+          background: "rgba(15, 23, 42, 0.95)",
+          borderBottom: "1px solid #1e293b",
+          zIndex: 10,
+          flexWrap: "wrap",
+          gap: "8px"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Layers size={14} color="#06b6d4" />
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", letterSpacing: "0.02em" }}>
+            FalkorDB Subgraph Canvas
+          </span>
+          <span style={{ fontSize: "11px", color: "#94a3b8", background: "#1e293b", padding: "1px 6px", borderRadius: "10px" }}>
+            {subgraph.nodes.length} Nodes • {subgraph.edges.length} Edges
+          </span>
+        </div>
+
+        {/* Filter Chips */}
+        <div style={{ display: "flex", gap: "4px" }}>
+          <button
+            onClick={() => setFilterType("all")}
+            style={{
+              background: filterType === "all" ? "#0891b2" : "#1e293b",
+              color: filterType === "all" ? "#ffffff" : "#cbd5e1",
+              border: "1px solid #334155",
+              borderRadius: "4px",
+              padding: "3px 8px",
+              fontSize: "11px",
+              fontWeight: 500,
+              cursor: "pointer"
+            }}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilterType("services")}
+            style={{
+              background: filterType === "services" ? "#0891b2" : "#1e293b",
+              color: filterType === "services" ? "#ffffff" : "#cbd5e1",
+              border: "1px solid #334155",
+              borderRadius: "4px",
+              padding: "3px 8px",
+              fontSize: "11px",
+              fontWeight: 500,
+              cursor: "pointer"
+            }}
+          >
+            🏢 Services
+          </button>
+          <button
+            onClick={() => setFilterType("incidents")}
+            style={{
+              background: filterType === "incidents" ? "#dc2626" : "#1e293b",
+              color: filterType === "incidents" ? "#ffffff" : "#cbd5e1",
+              border: "1px solid #334155",
+              borderRadius: "4px",
+              padding: "3px 8px",
+              fontSize: "11px",
+              fontWeight: 500,
+              cursor: "pointer"
+            }}
+          >
+            🚨 Outage & Squad
+          </button>
+          <button
+            onClick={() => setFilterType("governance")}
+            style={{
+              background: filterType === "governance" ? "#7c3aed" : "#1e293b",
+              color: filterType === "governance" ? "#ffffff" : "#cbd5e1",
+              border: "1px solid #334155",
+              borderRadius: "4px",
+              padding: "3px 8px",
+              fontSize: "11px",
+              fontWeight: 500,
+              cursor: "pointer"
+            }}
+          >
+            ⚖️ ADRs & Claims
+          </button>
+        </div>
+      </div>
+
+      {/* BOTTOMBAR: Color Legend & Inspection Hint */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 10,
+          left: 12,
+          zIndex: 10,
+          display: "flex",
+          gap: "8px",
+          flexWrap: "wrap",
+          background: "rgba(15, 23, 42, 0.9)",
+          padding: "5px 10px",
+          borderRadius: "6px",
+          backdropFilter: "blur(6px)",
+          border: "1px solid #334155",
+          fontSize: "10.5px"
+        }}
+      >
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <span style={{ width: 8, height: 8, background: "#0891b2", borderRadius: "2px" }}></span> Service
         </span>
@@ -223,27 +345,43 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
           <span style={{ width: 8, height: 8, background: "#dc2626", borderRadius: "2px" }}></span> Incident
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ width: 8, height: 8, background: "#7c3aed", borderRadius: "2px" }}></span> Decision / Policy
+          <span style={{ width: 8, height: 8, background: "#7c3aed", borderRadius: "2px" }}></span> Decision / ADR
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <span style={{ width: 8, height: 8, background: "#4f46e5", borderRadius: "2px" }}></span> Person
         </span>
+        <span style={{ color: "#64748b", marginLeft: "4px" }}>| 💡 Click node to inspect</span>
       </div>
 
       {/* Floating Canvas Controls */}
-      <div style={{ position: "absolute", bottom: 12, right: 12, zIndex: 10, display: "flex", gap: "6px", background: "rgba(15, 23, 42, 0.85)", padding: "4px", borderRadius: "6px", border: "1px solid #334155" }}>
-        <button onClick={handleZoomIn} title="Zoom In" style={{ background: "#1e293b", color: "#f8fafc", padding: "6px", borderRadius: "4px", display: "flex", alignItems: "center" }}>
-          <ZoomIn size={14} />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 10,
+          right: 12,
+          zIndex: 10,
+          display: "flex",
+          gap: "4px",
+          background: "rgba(15, 23, 42, 0.9)",
+          padding: "4px",
+          borderRadius: "6px",
+          border: "1px solid #334155"
+        }}
+      >
+        <button onClick={handleZoomIn} title="Zoom In" style={{ background: "#1e293b", color: "#f8fafc", padding: "5px 8px", borderRadius: "4px", border: "none", cursor: "pointer" }}>
+          <ZoomIn size={13} />
         </button>
-        <button onClick={handleZoomOut} title="Zoom Out" style={{ background: "#1e293b", color: "#f8fafc", padding: "6px", borderRadius: "4px", display: "flex", alignItems: "center" }}>
-          <ZoomOut size={14} />
+        <button onClick={handleZoomOut} title="Zoom Out" style={{ background: "#1e293b", color: "#f8fafc", padding: "5px 8px", borderRadius: "4px", border: "none", cursor: "pointer" }}>
+          <ZoomOut size={13} />
         </button>
-        <button onClick={handleFit} title="Fit to View" style={{ background: "#1e293b", color: "#f8fafc", padding: "6px", borderRadius: "4px", display: "flex", alignItems: "center" }}>
-          <Maximize2 size={14} />
+        <button onClick={handleFit} title="Fit to View" style={{ background: "#1e293b", color: "#f8fafc", padding: "5px 8px", borderRadius: "4px", border: "none", cursor: "pointer" }}>
+          <Maximize2 size={13} />
         </button>
       </div>
 
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      {/* Network Canvas */}
+      <div ref={containerRef} style={{ width: "100%", height: "100%", flex: 1 }} />
     </div>
   );
 };
+

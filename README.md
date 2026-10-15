@@ -111,20 +111,26 @@ RETURN stale
 
 ---
 
-## 5. End-to-End Demo Scenario: Nexora Cloud
+## 5. Flagship Superpowers & Demo Scenarios
 
-The included synthetic company dataset (`Nexora Cloud`) powers a complete 3-minute demo:
+OrgMind provides 4 distinct enterprise capabilities powered by FalkorDB:
 
-1. **Ask**: *"Explain how Payments works, who owns it, and what could be affected if Identity authentication changes."*
-2. **Resolve**: Agent traverses FalkorDB:
-   - Identifies owner: **Monetization & Billing** (`Sarah Kim`)
-   - Computes Blast Radius: `Billing Service` (P1) and `Checkout Web App` (P0) depend on `Payments Service`
-   - Uncovers Incident **INC-8812**: P0 outage where legacy token expiration failed
-   - Detects **Policy Conflict**: RFC-102 references legacy `AUTH-V1`, while approved ADR-042 mandates `AUTH-V2`
-   - Recommends Subject Matter Expert: **Sarah Kim** (Score 9, Service Owner + Incident SME)
-3. **Correct**: User clicks **"Approve Correction & Update Graph"**.
-4. **Mutate**: FalkorDB updates `clm_auth_v1` to `superseded` and creates `[:SUPERSEDED_BY]` edge.
-5. **Re-Run**: Query immediately updates to: *"Policy Compliance Verified: AUTH-V2 approved, historical audit preserved."*
+### 🚨 1. P0 Incident Commander (Firefighting Mode)
+* **What it does**: When an outage strikes (e.g. `payments-svc 500 auth cascade`), FalkorDB traverses 5 hops of the dependency graph to compute the **blast radius** (`checkout-web [P0]`, `billing-svc [P1]`).
+* **Historical Precedents**: Matches past post-mortem **INC-8812** with root cause (HMAC token desync).
+* **Automated Squad Dispatch**: Mobilizes the previous incident commander (`Elena Rostova`) and domain SME (`Sarah Jenkins`) with 1-click Slack dispatch copy.
+
+### ⚖️ 2. AI Staff Architect (Fire Prevention Mode)
+* **What it does**: Acts as an automated CI/CD architectural gate. When a pull request (e.g. PR #318) attempts to revert authentication to symmetric HMAC keys, FalkorDB blocks the merge.
+* **ADR Compliance**: Cites approved **ADR-042** (mandating asymmetric RS256 token rotation) and flags that reverting revives the vulnerability that caused outage INC-8812.
+* **1-Click Review**: Generates formatted markdown for GitHub PR review comments.
+
+### 🧠 3. Living Institutional Memory & Stale Claim Healing
+* **Contradiction Detection**: Detects conflicting claims between stale architecture docs (RFC-102 with `AUTH-V1`) and approved decisions (ADR-042 with `AUTH-V2`).
+* **1-Click Graph Healing**: User clicks **"Approve Correction"** to deterministically mutate FalkorDB: marks `clm_auth_v1` as `superseded` and creates `[:SUPERSEDED_BY]` audit edge.
+
+### 📥 4. Bring Your Own Architecture (Custom Ingestion)
+* **Enterprise Customization**: Ingest any company's microservices, teams, and policies via structured JSON spec (`/api/ingest/json`) or plain English architecture notes (`/api/ingest/text`).
 
 ---
 
@@ -140,10 +146,10 @@ The included synthetic company dataset (`Nexora Cloud`) powers a complete 3-minu
 ./start.sh
 ```
 This automatically:
-1. Verifies/starts FalkorDB in Docker (`port 6379` and Browser on `port 3000`).
-2. Populates FalkorDB with the Nexora Cloud company graph.
-3. Launches the FastAPI backend on `http://localhost:8000`.
-4. Launches the Vite React frontend on `http://localhost:5173`.
+1. Verifies/starts FalkorDB in Docker (`port 6379` and FalkorDB Browser on `port 3000`).
+2. Populates FalkorDB with the initial Nexora Cloud company graph.
+3. Launches the FastAPI backend on `http://localhost:8001`.
+4. Launches the Vite React frontend console on `http://localhost:5173`.
 
 ### Option B: Manual Setup
 
@@ -157,7 +163,7 @@ This automatically:
    source venv/bin/activate
    pip install -r backend/requirements.txt
    python3 backend/seed_data.py
-   uvicorn backend.main:app --port 8000 --reload
+   uvicorn backend.main:app --port 8001 --reload
    ```
 3. **Setup Frontend**:
    ```bash
@@ -183,3 +189,28 @@ All 6 test suites verify:
 - Conflicting claim detection & state transition lifecycle
 - Degree-weighted expert scoring
 - End-to-end agent investigation outputs
+
+---
+
+## 8. Suggested 3-Minute Demo Video Walkthrough
+
+1. **Minute 0:00 – 0:45: The Problem & Live FalkorDB Graph**
+   - Introduce OrgMind for Track 3 (Company Brain).
+   - Point to the live interactive canvas on the right showing Nexora Cloud's 6 microservices, teams, people, ADRs, and incidents in FalkorDB.
+   - Show FalkorDB Browser at `http://localhost:3000`.
+
+2. **Minute 0:45 – 1:30: Superpower 1 — P0 Incident Commander**
+   - Click **"P0 Incident Commander"** on the left.
+   - Show how FalkorDB traverses dependencies to flag downstream impact on `checkout-web` and `billing-svc`.
+   - Show historical match to `INC-8812` and automated on-call squad dispatch. Click **"Copy Slack Dispatch"**.
+
+3. **Minute 1:30 – 2:15: Superpower 2 — AI Staff Architect PR Drift Gate**
+   - Click **"AI Staff Architect Guard"**.
+   - Show PR #318 blocked due to ADR-042 violation (preventing recurrence of INC-8812).
+   - Click **"View ADR-042"** to show document evidence with auditable provenance.
+
+4. **Minute 2:15 – 3:00: 1-Click Knowledge Healing & Custom Company Ingestion**
+   - Click **"1-Click Approve Correction"** to see FalkorDB update `active` claim to `superseded` in real-time.
+   - Click **"📥 Ingest Company Data"** to demonstrate custom topology ingestion into FalkorDB.
+   - Conclude: Why FalkorDB graph traversal beats vector search for institutional memory.
+

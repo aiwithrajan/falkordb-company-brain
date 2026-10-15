@@ -56,13 +56,13 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
     setStatusMessage(null);
     try {
       const parsed = JSON.parse(jsonText);
-      const res = await fetch("http://localhost:8001/api/ingest/json", {
+      const res = await fetch("/api/ingest/json", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed),
       });
       const data = await res.json();
-      setStatusMessage(data.message || "Company successfully ingested!");
+      setStatusMessage(data.message || "Company successfully ingested into FalkorDB!");
       setTimeout(() => {
         onIngestSuccess();
         onClose();
@@ -78,7 +78,7 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
     setIsSubmitting(true);
     setStatusMessage(null);
     try {
-      const res = await fetch("http://localhost:8001/api/ingest/text", {
+      const res = await fetch("/api/ingest/text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: rawText, company_name: companyName }),
