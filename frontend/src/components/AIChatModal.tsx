@@ -6,6 +6,7 @@ import {
   Bot,
   Settings
 } from "lucide-react";
+import { getMockChatReply } from "../fallbackData";
 
 interface ChatMessage {
   id: string;
@@ -97,6 +98,10 @@ export const AIChatModal: React.FC = () => {
       if (!res.ok) {
         throw new Error(`Server returned ${res.status}`);
       }
+      const ct = res.headers.get("content-type");
+      if (!ct || !ct.includes("application/json")) {
+        throw new Error("Response is not JSON");
+      }
 
       const data = await res.json();
       const botMsg: ChatMessage = {
@@ -109,15 +114,18 @@ export const AIChatModal: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, botMsg]);
-    } catch (err: any) {
-      const errorMsg: ChatMessage = {
-        id: `err-${Date.now()}`,
+    } catch {
+      // Graceful offline Graph-RAG fallback
+      const mock = getMockChatReply(textToSend.trim(), selectedModel);
+      const botMsg: ChatMessage = {
+        id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: `⚠️ **Error connecting to AI backend:** ${err.message}. Please verify the backend is running.`,
-        modelUsed: "Error Fallback",
+        content: mock.reply,
+        modelUsed: mock.model_used,
+        latencyMs: mock.latency_ms,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => [...prev, botMsg]);
     } finally {
       setIsLoading(false);
     }

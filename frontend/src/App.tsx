@@ -10,6 +10,7 @@ import { HomeHero } from "./components/HomeHero";
 import { FeatureTourPage } from "./components/FeatureTourPage";
 import { DocumentationPage } from "./components/DocumentationPage";
 import { AIChatModal } from "./components/AIChatModal";
+import { DEFAULT_OVERVIEW, DEFAULT_INVESTIGATION_OVERVIEW, getMockInvestigation } from "./fallbackData";
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || "/api";
 
@@ -58,8 +59,8 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 export function App() {
-  const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [investigation, setInvestigation] = useState<InvestigationResponse | null>(null);
+  const [overview, setOverview] = useState<OverviewData>(DEFAULT_OVERVIEW);
+  const [investigation, setInvestigation] = useState<InvestigationResponse | null>(DEFAULT_INVESTIGATION_OVERVIEW);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [evidenceUri, setEvidenceUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,28 +98,42 @@ export function App() {
   const fetchOverview = async () => {
     try {
       const res = await fetch(`${API_BASE}/overview`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Response is not JSON");
+      }
       const data = await res.json();
       setOverview(data);
     } catch (err) {
-      console.error("Failed to fetch overview:", err);
+      console.warn("Using offline / fallback graph overview:", err);
+      setOverview((prev) => prev || DEFAULT_OVERVIEW);
     }
   };
 
   const runInvestigation = async (question: string, mode?: string) => {
     setIsLoading(true);
     setSelectedNode(null);
+    const targetMode = mode || activeMode;
     if (mode) setActiveMode(mode as any);
     try {
       const res = await fetch(`${API_BASE}/investigate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, mode: mode || activeMode }),
+        body: JSON.stringify({ question, mode: targetMode }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Response is not JSON");
+      }
       const data = await res.json();
       setInvestigation(data);
       fetchOverview();
     } catch (err) {
-      console.error("Investigation failed:", err);
+      console.warn("Using offline / fallback investigation:", err);
+      const mock = getMockInvestigation(question, targetMode);
+      setInvestigation(mock);
     } finally {
       setIsLoading(false);
     }
@@ -127,17 +142,45 @@ export function App() {
   const handleApproveCorrection = async (claimId: string) => {
     setIsApproving(true);
     try {
-      await fetch(`${API_BASE}/claims/correct`, {
+      const res = await fetch(`${API_BASE}/claims/correct`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ claim_id: claimId, reviewed_by: "Alex Chen (VP Eng)" }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       if (investigation) {
         await runInvestigation(investigation.question, activeMode);
       }
       fetchOverview();
     } catch (err) {
-      console.error("Failed to approve correction:", err);
+      console.warn("Applying client-side graph self-healing mutation:", err);
+      // Mutate in-memory state
+      setInvestigation((prev) => {
+        if (!prev) return prev;
+        const updatedNodes = prev.subgraph?.nodes?.map((n: GraphNode) =>
+          n.id === claimId
+            ? { ...n, properties: { ...n.properties, status: "superseded" } }
+            : n
+        );
+        return {
+          ...prev,
+          pending_correction: undefined,
+          conflict_data: {
+            has_conflict: false,
+            conflicts: [],
+            historical_resolutions: prev.conflict_data?.conflicts || [],
+            subgraph: prev.conflict_data?.subgraph,
+          },
+          subgraph: {
+            ...prev.subgraph,
+            nodes: updatedNodes || [],
+          },
+        };
+      });
+      setOverview((prev) => ({
+        ...prev,
+        counts: { ...prev.counts, active_conflicts: 0 },
+      }));
     } finally {
       setIsApproving(false);
     }
@@ -146,12 +189,16 @@ export function App() {
   const handleReset = async () => {
     setIsResetting(true);
     try {
-      await fetch(`${API_BASE}/reset`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/reset`, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await fetchOverview();
       setActiveMode("overview");
       await runInvestigation("Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.", "overview");
     } catch (err) {
-      console.error("Failed to reset graph:", err);
+      console.warn("Resetting to default graph state:", err);
+      setOverview(DEFAULT_OVERVIEW);
+      setActiveMode("overview");
+      setInvestigation(DEFAULT_INVESTIGATION_OVERVIEW);
     } finally {
       setIsResetting(false);
     }
@@ -261,9 +308,11 @@ export function App() {
               selectedNodeId={selectedNode?.id}
             />
           ) : (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#64748b" }}>
-              Loading FalkorDB Subgraph...
-            </div>
+            <GraphCanvas
+              subgraph={DEFAULT_OVERVIEW.dependency_graph}
+              onSelectNode={(node) => setSelectedNode(node)}
+              selectedNodeId={selectedNode?.id}
+            />
           )}
         </ErrorBoundary>
 

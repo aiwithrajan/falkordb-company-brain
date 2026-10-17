@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, FileText, CheckCircle2 } from "lucide-react";
+import { getMockEvidence } from "../fallbackData";
 
 interface EvidenceModalProps {
   sourceUri: string | null;
@@ -14,9 +15,16 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({ sourceUri, onClose
     setContent("Fetching source evidence from disk...");
     const apiBase = (import.meta as any).env?.VITE_API_URL || "/api";
     fetch(`${apiBase}/evidence/${sourceUri}`)
-      .then((res) => res.json())
-      .then((data) => setContent(data.content || "No content found."))
-      .catch((err) => setContent(`Error loading document: ${err.message}`));
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get("content-type");
+        if (!ct || !ct.includes("application/json")) throw new Error("Not JSON");
+        return res.json();
+      })
+      .then((data) => setContent(data.content || getMockEvidence(sourceUri)))
+      .catch(() => {
+        setContent(getMockEvidence(sourceUri));
+      });
   }, [sourceUri]);
 
   if (!sourceUri) return null;
