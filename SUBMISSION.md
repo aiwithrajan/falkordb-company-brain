@@ -12,6 +12,7 @@
 - **Tagline**: Autonomous Enterprise Architecture, CI/CD PR Drift Prevention & P0 Incident Commander powered by FalkorDB GraphBLAS.
 - **Track Entered**: **Track 3: Company Brain**
 - **Repository Link**: `https://github.com/aiwithrajan/falkordb-company-brain`
+- **Live Deployment Link**: `https://frontend-orcin-theta-25.vercel.app` (Hosted on Vercel)
 - **Demo Video Link**: `https://youtu.be/txkIbVMguPc` (YouTube Video: 1080p 60fps with Microsoft Azure Neural AI voiceover)
 - **Demo Video Duration**: 4 minutes 32 seconds
 
@@ -153,7 +154,11 @@ The working demo video is recorded at **1080p 60 FPS**, dubbed with Microsoft Az
 
 ## 7. Deployment & Local Setup Instructions
 
-OrgMind includes a 1-click automated setup script that configures FalkorDB, seeds the enterprise graph, starts the FastAPI backend, and launches the Vite React frontend.
+### Live Cloud Deployment
+- **Live Vercel Application**: [https://frontend-orcin-theta-25.vercel.app](https://frontend-orcin-theta-25.vercel.app)
+- **Interactive Feature Tour**: [https://frontend-orcin-theta-25.vercel.app/tour](https://frontend-orcin-theta-25.vercel.app/tour)
+
+OrgMind also includes a 1-click automated setup script for local evaluation:
 
 ### Prerequisites
 - Docker & Docker Compose

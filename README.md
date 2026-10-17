@@ -4,11 +4,13 @@
 
 [![FalkorDB](https://img.shields.io/badge/Graph_Database-FalkorDB-6366f1?style=for-the-badge&logo=redis)](https://www.falkordb.com/)
 [![GraphBLAS](https://img.shields.io/badge/Core_Engine-GraphBLAS_Sparse_Matrix-amber.svg?style=for-the-badge)](https://graphblas.org/)
+[![Vercel Live](https://img.shields.io/badge/Live_Deployment-Vercel-black?style=for-the-badge&logo=vercel)](https://frontend-orcin-theta-25.vercel.app)
 [![YouTube Demo](https://img.shields.io/badge/YouTube-Watch_Demo_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/txkIbVMguPc)
 [![Open Source LLMs](https://img.shields.io/badge/AI_Copilot-Llama_3.2_|_Mistral_|_DeepSeek-emerald.svg?style=for-the-badge)](https://huggingface.co/)
 [![Tests](https://img.shields.io/badge/Acceptance_Tests-Passing_8%2F8-brightgreen.svg?style=for-the-badge)](tests/)
 [![Documentation](https://img.shields.io/badge/Docs-Enterprise_Specification-blue.svg?style=for-the-badge)](DOCUMENTATION.md)
 
+> 🌐 **Live Web Application (Vercel)**: [https://frontend-orcin-theta-25.vercel.app](https://frontend-orcin-theta-25.vercel.app)  
 > 🎥 **Watch the 4.5-minute Walkthrough Demo on YouTube**: [https://youtu.be/txkIbVMguPc](https://youtu.be/txkIbVMguPc)  
 > 🏆 **Submission Package & Pitch**: [SUBMISSION.md](SUBMISSION.md) | **Evaluation Track**: Track 3: Company Brain
 
