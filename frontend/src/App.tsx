@@ -6,6 +6,10 @@ import { GraphCanvas } from "./components/GraphCanvas";
 import { NodeDetailDrawer } from "./components/NodeDetailDrawer";
 import { EvidenceModal } from "./components/EvidenceModal";
 import { IngestModal } from "./components/IngestModal";
+import { HomeHero } from "./components/HomeHero";
+import { FeatureTourPage } from "./components/FeatureTourPage";
+import { DocumentationPage } from "./components/DocumentationPage";
+import { AIChatModal } from "./components/AIChatModal";
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || "/api";
 
@@ -62,6 +66,7 @@ export function App() {
   const [isApproving, setIsApproving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isIngestOpen, setIsIngestOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"home" | "console" | "tour" | "docs">("home");
 
   const [activeMode, setActiveMode] = useState<"overview" | "incident" | "architect">("overview");
 
@@ -75,6 +80,19 @@ export function App() {
     setActiveMode(mode);
     runInvestigation(modePrompts[mode], mode);
   };
+
+  useEffect(() => {
+    (window as any).__selectNodeById = (nodeId: string) => {
+      const nodes = investigation?.subgraph?.nodes || overview?.dependency_graph?.nodes || [];
+      const target = nodes.find((n: GraphNode) => n.id === nodeId);
+      if (target) setSelectedNode(target);
+    };
+    (window as any).__closeNodeDetail = () => setSelectedNode(null);
+    (window as any).__setViewMode = (mode: "home" | "console" | "tour" | "docs") => setViewMode(mode);
+    (window as any).__openIngest = () => setIsIngestOpen(true);
+    (window as any).__closeIngest = () => setIsIngestOpen(false);
+    (window as any).__setInvestigationMode = (mode: "overview" | "incident" | "architect") => handleSelectMode(mode);
+  }, [investigation, overview]);
 
   const fetchOverview = async () => {
     try {
@@ -144,8 +162,76 @@ export function App() {
     runInvestigation("Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.", "overview");
   }, []);
 
+  if (viewMode === "home") {
+    return (
+      <>
+        <HomeHero
+          onEnterConsole={() => setIsIngestOpen(true)}
+          companyName={overview?.company_name || "Nexora Cloud"}
+          onOpenTour={() => setViewMode("tour")}
+          onOpenDocs={() => setViewMode("docs")}
+        />
+        {/* Company Ingestion Wizard Gateway */}
+        <IngestModal
+          isOpen={isIngestOpen}
+          onClose={() => setIsIngestOpen(false)}
+          onIngestSuccess={() => {
+            fetchOverview();
+            setViewMode("console");
+            runInvestigation("Explain service architecture, ownership, and dependencies.");
+          }}
+          onDirectEnter={() => {
+            setViewMode("console");
+          }}
+        />
+        <AIChatModal />
+      </>
+    );
+  }
+
+  if (viewMode === "docs") {
+    return (
+      <>
+        <DocumentationPage
+          onGoHome={() => setViewMode("home")}
+          onEnterConsole={() => setViewMode("console")}
+          onOpenTour={() => setViewMode("tour")}
+        />
+        <AIChatModal />
+      </>
+    );
+  }
+
+  if (viewMode === "tour") {
+    return (
+      <>
+        <FeatureTourPage
+          onGoHome={() => setViewMode("home")}
+          onEnterConsole={(mode) => {
+            if (mode) handleSelectMode(mode);
+            setViewMode("console");
+          }}
+          onOpenIngest={() => setIsIngestOpen(true)}
+        />
+        <IngestModal
+          isOpen={isIngestOpen}
+          onClose={() => setIsIngestOpen(false)}
+          onIngestSuccess={() => {
+            fetchOverview();
+            setViewMode("console");
+            runInvestigation("Explain service architecture, ownership, and dependencies.");
+          }}
+          onDirectEnter={() => {
+            setViewMode("console");
+          }}
+        />
+        <AIChatModal />
+      </>
+    );
+  }
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", padding: "16px", background: "#090d16", overflowY: "auto", overflowX: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", padding: "20px 32px", background: "#050505", overflowY: "auto", overflowX: "hidden" }}>
       {/* Top Header & KPI Bar */}
       <CompanyOverview
         overview={overview}
@@ -154,51 +240,54 @@ export function App() {
         onOpenIngest={() => setIsIngestOpen(true)}
         activeMode={activeMode}
         onSelectMode={handleSelectMode}
+        onGoHome={() => setViewMode("home")}
+        onOpenTour={() => setViewMode("tour")}
+        onOpenDocs={() => setViewMode("docs")}
       />
 
-      {/* Main Split Layout: Left 46% (Investigation Panel) | Right 54% (Graph Canvas) */}
-      <div style={{ display: "grid", gridTemplateColumns: "46% 54%", gap: "16px", flex: 1, minHeight: "calc(100vh - 220px)", height: "auto" }}>
-        {/* Left Side: Ask the Company & Investigation Trace */}
-        <div style={{ height: "calc(100vh - 220px)", minHeight: "560px", overflowY: "auto", paddingRight: "8px" }}>
-          <InvestigationPanel
-            onInvestigate={runInvestigation}
-            isLoading={isLoading}
-            investigation={investigation}
-            onApproveCorrection={handleApproveCorrection}
-            isApproving={isApproving}
-            onOpenEvidence={(uri) => setEvidenceUri(uri)}
-          />
-        </div>
+      {/* SECTION 1: Full-Width FalkorDB Subgraph Canvas (Top Viewport) */}
+      <div style={{ position: "relative", width: "100%", height: "calc(100vh - 210px)", minHeight: "580px", marginBottom: "32px" }}>
+        <ErrorBoundary>
+          {(investigation?.subgraph && investigation.subgraph.nodes && investigation.subgraph.nodes.length > 0) ? (
+            <GraphCanvas
+              subgraph={investigation.subgraph}
+              onSelectNode={(node) => setSelectedNode(node)}
+              selectedNodeId={selectedNode?.id}
+            />
+          ) : (overview?.dependency_graph && overview.dependency_graph.nodes && overview.dependency_graph.nodes.length > 0) ? (
+            <GraphCanvas
+              subgraph={overview.dependency_graph}
+              onSelectNode={(node) => setSelectedNode(node)}
+              selectedNodeId={selectedNode?.id}
+            />
+          ) : (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#64748b" }}>
+              Loading FalkorDB Subgraph...
+            </div>
+          )}
+        </ErrorBoundary>
 
-        {/* Right Side: Interactive Subgraph Visualizer */}
-        <div style={{ position: "sticky", top: "16px", height: "calc(100vh - 220px)", minHeight: "560px" }}>
-          <ErrorBoundary>
-            {(investigation?.subgraph && investigation.subgraph.nodes && investigation.subgraph.nodes.length > 0) ? (
-              <GraphCanvas
-                subgraph={investigation.subgraph}
-                onSelectNode={(node) => setSelectedNode(node)}
-                selectedNodeId={selectedNode?.id}
-              />
-            ) : (overview?.dependency_graph && overview.dependency_graph.nodes && overview.dependency_graph.nodes.length > 0) ? (
-              <GraphCanvas
-                subgraph={overview.dependency_graph}
-                onSelectNode={(node) => setSelectedNode(node)}
-                selectedNodeId={selectedNode?.id}
-              />
-            ) : (
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#64748b" }}>
-                Loading FalkorDB Subgraph...
-              </div>
-            )}
-          </ErrorBoundary>
+        {/* Node Property Inspector Overlay */}
+        <NodeDetailDrawer
+          node={selectedNode}
+          onClose={() => setSelectedNode(null)}
+          onOpenEvidence={(uri) => setEvidenceUri(uri)}
+        />
+      </div>
 
-          {/* Node Property Inspector Overlay */}
-          <NodeDetailDrawer
-            node={selectedNode}
-            onClose={() => setSelectedNode(null)}
-            onOpenEvidence={(uri) => setEvidenceUri(uri)}
-          />
-        </div>
+      {/* SECTION 2: Investigation & AI Capabilities (Unified Container with 1, 2, 3 Slider) */}
+      <div id="investigation-section" style={{ width: "100%", maxWidth: "1240px", margin: "0 auto", paddingBottom: "48px" }}>
+        <InvestigationPanel
+          onInvestigate={runInvestigation}
+          isLoading={isLoading}
+          investigation={investigation}
+          onApproveCorrection={handleApproveCorrection}
+          isApproving={isApproving}
+          onOpenEvidence={(uri) => setEvidenceUri(uri)}
+          onJumpToCanvas={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          activeMode={activeMode}
+          onSelectMode={handleSelectMode}
+        />
       </div>
 
       {/* Slide-over Evidence Drawer */}
@@ -213,6 +302,9 @@ export function App() {
           runInvestigation("Explain service architecture, ownership, and dependencies.");
         }}
       />
+
+      {/* Global Open-Source AI Copilot Chat */}
+      <AIChatModal />
     </div>
   );
 }

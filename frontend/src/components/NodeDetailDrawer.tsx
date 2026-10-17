@@ -15,48 +15,66 @@ export const NodeDetailDrawer: React.FC<NodeDetailDrawerProps> = ({ node, onClos
     <div
       style={{
         position: "absolute",
-        top: 12,
-        right: 12,
+        top: 14,
+        right: 14,
         width: "320px",
-        background: "rgba(15, 23, 42, 0.95)",
-        border: "1px solid #334155",
-        borderRadius: "8px",
+        background: "rgba(12, 10, 9, 0.95)",
+        border: "1px solid #242220",
+        borderRadius: "10px",
         padding: "16px",
-        backdropFilter: "blur(8px)",
-        boxShadow: "0 10px 25px rgba(0,0,0,0.6)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 15px 35px rgba(0,0,0,0.8)",
         zIndex: 20,
         display: "flex",
         flexDirection: "column",
         gap: "10px",
         maxHeight: "85%",
         overflowY: "auto",
+        boxSizing: "border-box",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1e293b", paddingBottom: "8px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <Info size={16} color="#38bdf8" />
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#f8fafc" }}>Node Inspector</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #242220", paddingBottom: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Info size={15} color="#e0a35c" />
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "#ffffff", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            Node Inspector
+          </span>
         </div>
-        <button onClick={onClose} style={{ background: "transparent", color: "#94a3b8" }}>
-          <X size={16} />
+        <button onClick={onClose} style={{ background: "transparent", color: "#a8a29e", cursor: "pointer", border: "none" }}>
+          <X size={15} />
         </button>
       </div>
 
       <div>
-        <div style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase" }}>Label & Name</div>
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "#38bdf8" }}>{node.label}</div>
-        <div style={{ display: "inline-block", background: "#1e293b", color: "#a5b4fc", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", marginTop: "4px" }}>
+        <div style={{ fontSize: "9.5px", color: "#78716c", letterSpacing: "0.12em", textTransform: "uppercase" }}>Label & Name</div>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "#e0a35c", marginTop: "2px" }}>{node.label}</div>
+        <div
+          style={{
+            display: "inline-block",
+            background: "#141210",
+            border: "1px solid #242220",
+            color: "#d6d3d1",
+            padding: "2px 8px",
+            borderRadius: "12px",
+            fontSize: "10px",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            marginTop: "6px",
+          }}
+        >
           Type: {node.type}
         </div>
       </div>
 
-      <div style={{ borderTop: "1px solid #1e293b", paddingTop: "8px" }}>
-        <div style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>Properties</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", fontFamily: "monospace" }}>
+      <div style={{ borderTop: "1px solid #242220", paddingTop: "10px" }}>
+        <div style={{ fontSize: "9.5px", color: "#78716c", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "6px" }}>
+          Properties
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "11.5px", fontFamily: "monospace" }}>
           {Object.entries(node.properties).map(([k, v]) => (
-            <div key={k} style={{ display: "flex", flexDirection: "column", background: "#090d16", padding: "4px 8px", borderRadius: "4px" }}>
-              <span style={{ color: "#94a3b8", fontSize: "11px" }}>{k}:</span>
-              <span style={{ color: k === "status" && v === "superseded" ? "#94a3b8" : k === "status" && v === "active" ? "#f59e0b" : "#e2e8f0" }}>
+            <div key={k} style={{ display: "flex", flexDirection: "column", background: "#080706", border: "1px solid #1c1917", padding: "5px 8px", borderRadius: "4px" }}>
+              <span style={{ color: "#78716c", fontSize: "10px" }}>{k}:</span>
+              <span style={{ color: k === "status" && v === "superseded" ? "#78716c" : k === "status" && v === "active" ? "#e0a35c" : "#f5f5f4" }}>
                 {String(v)}
               </span>
             </div>
@@ -68,19 +86,24 @@ export const NodeDetailDrawer: React.FC<NodeDetailDrawerProps> = ({ node, onClos
         <button
           onClick={() => onOpenEvidence(node.properties.source_uri)}
           style={{
-            marginTop: "6px",
-            background: "#0891b2",
-            color: "#ffffff",
-            padding: "6px 12px",
-            borderRadius: "6px",
-            fontSize: "12px",
+            marginTop: "8px",
+            background: "#d97706",
+            color: "#000000",
+            padding: "7px 14px",
+            borderRadius: "20px",
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "6px",
+            border: "none",
+            cursor: "pointer",
           }}
         >
-          <FileCode size={14} /> View Supporting Document
+          <FileCode size={13} color="#000000" /> View Document
         </button>
       )}
     </div>

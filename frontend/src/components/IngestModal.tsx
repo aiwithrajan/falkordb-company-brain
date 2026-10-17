@@ -1,14 +1,20 @@
 import React, { useState } from "react";
-import { X, Upload, FileCode, FileText, CheckCircle2 } from "lucide-react";
+import { X, FileCode, FileText, CheckCircle2, Zap, Server, ShieldAlert, Scale, Database } from "lucide-react";
 
 interface IngestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onIngestSuccess: () => void;
+  onDirectEnter?: () => void;
 }
 
-export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIngestSuccess }) => {
-  const [activeTab, setActiveTab] = useState<"json" | "text">("json");
+export const IngestModal: React.FC<IngestModalProps> = ({
+  isOpen,
+  onClose,
+  onIngestSuccess,
+  onDirectEnter,
+}) => {
+  const [activeTab, setActiveTab] = useState<"demo" | "json" | "text">("demo");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -51,6 +57,24 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
 
   if (!isOpen) return null;
 
+  const handleDemoSubmit = async () => {
+    setIsSubmitting(true);
+    setStatusMessage(null);
+    try {
+      const res = await fetch("/api/reset", { method: "POST" });
+      const data = await res.json();
+      setStatusMessage(data.message || "Nexora Cloud company loaded into FalkorDB!");
+      setTimeout(() => {
+        onIngestSuccess();
+        onClose();
+      }, 700);
+    } catch (err: any) {
+      setStatusMessage(`Error: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleJsonSubmit = async () => {
     setIsSubmitting(true);
     setStatusMessage(null);
@@ -66,7 +90,7 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
       setTimeout(() => {
         onIngestSuccess();
         onClose();
-      }, 1000);
+      }, 700);
     } catch (err: any) {
       setStatusMessage(`Error: ${err.message}`);
     } finally {
@@ -81,14 +105,14 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
       const res = await fetch("/api/ingest/text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: rawText, company_name: companyName }),
+        body: JSON.stringify({ company_name: companyName, text: rawText }),
       });
       const data = await res.json();
-      setStatusMessage(data.message || "Architecture successfully parsed into FalkorDB!");
+      setStatusMessage(data.message || "Company text processed into FalkorDB!");
       setTimeout(() => {
         onIngestSuccess();
         onClose();
-      }, 1000);
+      }, 700);
     } catch (err: any) {
       setStatusMessage(`Error: ${err.message}`);
     } finally {
@@ -102,51 +126,79 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
         position: "fixed",
         inset: 0,
         zIndex: 100,
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        backgroundColor: "rgba(0, 0, 0, 0.88)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backdropFilter: "blur(6px)",
+        padding: "24px",
+        backdropFilter: "blur(12px)",
       }}
       onClick={onClose}
     >
       <div
         style={{
           width: "680px",
-          maxWidth: "95%",
+          maxWidth: "100%",
           maxHeight: "90vh",
-          background: "#0f172a",
-          border: "1px solid #334155",
-          borderRadius: "10px",
-          padding: "24px",
+          background: "#0c0a09",
+          border: "1px solid #292524",
+          borderRadius: "14px",
+          padding: "32px",
           display: "flex",
           flexDirection: "column",
-          gap: "16px",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+          gap: "18px",
+          boxShadow: "0 25px 70px rgba(0, 0, 0, 0.95)",
           overflowY: "auto",
+          boxSizing: "border-box",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1e293b", paddingBottom: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Upload size={20} color="#06b6d4" />
-            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#f8fafc" }}>
-              Ingest Your Company Knowledge Graph
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #242220", paddingBottom: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#e0a35c", boxShadow: "0 0 10px #e0a35c" }} />
+              <span style={{ fontSize: "10.5px", letterSpacing: "0.2em", color: "#e0a35c", textTransform: "uppercase", fontWeight: 600 }}>
+                GATEWAY TO PORTAL
+              </span>
+            </div>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "-0.01em", color: "#ffffff", margin: "2px 0 0 0" }}>
+              Ingest Company Data & Launch Portal
             </h2>
+            <p style={{ fontSize: "12px", color: "#a8a29e", margin: "2px 0 0 0", lineHeight: 1.5 }}>
+              Choose a dataset or import your own company to build the FalkorDB Knowledge Graph.
+            </p>
           </div>
-          <button onClick={onClose} style={{ background: "transparent", color: "#94a3b8" }}>
+          <button onClick={onClose} style={{ background: "transparent", color: "#a8a29e", cursor: "pointer", border: "none", padding: "4px" }}>
             <X size={20} />
           </button>
         </div>
 
-        <p style={{ fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
-          Load your company’s services, teams, dependencies, and decisions into FalkorDB.
-          The AI Agent will immediately begin reasoning over your infrastructure and policies.
-        </p>
-
-        {/* Tab Switcher */}
-        <div style={{ display: "flex", gap: "8px", background: "#090d16", padding: "4px", borderRadius: "6px" }}>
+        {/* Tab Switcher (3 clear options) */}
+        <div style={{ display: "flex", gap: "6px", background: "#080706", padding: "5px", borderRadius: "24px", border: "1px solid #242220" }}>
+          <button
+            onClick={() => setActiveTab("demo")}
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              padding: "8px 12px",
+              borderRadius: "20px",
+              fontSize: "11px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              fontWeight: activeTab === "demo" ? 700 : 500,
+              background: activeTab === "demo" ? "#d97706" : "transparent",
+              color: activeTab === "demo" ? "#000000" : "#a8a29e",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            <Zap size={13} color={activeTab === "demo" ? "#000000" : "#e0a35c"} /> ⚡ Pre-Built Demo
+          </button>
           <button
             onClick={() => setActiveTab("json")}
             style={{
@@ -155,15 +207,20 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
               alignItems: "center",
               justifyContent: "center",
               gap: "6px",
-              padding: "8px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontWeight: activeTab === "json" ? 600 : 400,
-              background: activeTab === "json" ? "#1e293b" : "transparent",
-              color: activeTab === "json" ? "#38bdf8" : "#94a3b8",
+              padding: "8px 12px",
+              borderRadius: "20px",
+              fontSize: "11px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              fontWeight: activeTab === "json" ? 700 : 500,
+              background: activeTab === "json" ? "#d97706" : "transparent",
+              color: activeTab === "json" ? "#000000" : "#a8a29e",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
             }}
           >
-            <FileCode size={14} /> Structured JSON Import
+            <FileCode size={13} color={activeTab === "json" ? "#000000" : "#e0a35c"} /> Custom JSON
           </button>
           <button
             onClick={() => setActiveTab("text")}
@@ -173,95 +230,184 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
               alignItems: "center",
               justifyContent: "center",
               gap: "6px",
-              padding: "8px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontWeight: activeTab === "text" ? 600 : 400,
-              background: activeTab === "text" ? "#1e293b" : "transparent",
-              color: activeTab === "text" ? "#38bdf8" : "#94a3b8",
+              padding: "8px 12px",
+              borderRadius: "20px",
+              fontSize: "11px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              fontWeight: activeTab === "text" ? 700 : 500,
+              background: activeTab === "text" ? "#d97706" : "transparent",
+              color: activeTab === "text" ? "#000000" : "#a8a29e",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
             }}
           >
-            <FileText size={14} /> Plain Text / RFC Notes
+            <FileText size={13} color={activeTab === "text" ? "#000000" : "#e0a35c"} /> Plain Text
           </button>
         </div>
 
-        {/* JSON Import Tab */}
+        {/* TAB 1: PRE-BUILT DEMO (NEXORA CLOUD) */}
+        {activeTab === "demo" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div
+              style={{
+                background: "#141210",
+                border: "1px solid #242220",
+                borderRadius: "10px",
+                padding: "18px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "#f5d59f" }}>
+                  Nexora Cloud (Official Hackathon Dataset)
+                </span>
+                <span style={{ fontSize: "10px", background: "rgba(224, 163, 92, 0.1)", color: "#e0a35c", border: "1px solid rgba(224, 163, 92, 0.3)", padding: "2px 8px", borderRadius: "10px", textTransform: "uppercase", fontWeight: 600 }}>
+                  Ready to Test
+                </span>
+              </div>
+
+              <p style={{ fontSize: "11.5px", color: "#a8a29e", margin: 0, lineHeight: 1.5 }}>
+                Full enterprise microservice graph with pre-configured scenarios ready for instant investigation:
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
+                <div style={{ background: "#0c0a09", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Server size={14} color="#e0a35c" />
+                  <span><strong>6 Microservices</strong> (Payments, Auth, etc.)</span>
+                </div>
+                <div style={{ background: "#0c0a09", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <ShieldAlert size={14} color="#f87171" />
+                  <span><strong>P0 Cascade</strong> (payments-svc 500)</span>
+                </div>
+                <div style={{ background: "#0c0a09", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Scale size={14} color="#c084fc" />
+                  <span><strong>ADR-042 Policy</strong> (Auth-V2 Mandate)</span>
+                </div>
+                <div style={{ background: "#0c0a09", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Database size={14} color="#34d399" />
+                  <span><strong>Active Conflict</strong> (RFC-102 vs ADR-042)</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleDemoSubmit}
+              disabled={isSubmitting}
+              style={{
+                background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                color: "#000000",
+                padding: "12px 20px",
+                borderRadius: "24px",
+                fontWeight: 700,
+                fontSize: "12px",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                border: "none",
+                boxShadow: "0 4px 20px rgba(217, 119, 6, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+            >
+              <Zap size={14} color="#000000" />
+              {isSubmitting ? "Loading Nexora Cloud into FalkorDB..." : "Load Nexora Cloud & Open Portal →"}
+            </button>
+          </div>
+        )}
+
+        {/* TAB 2: STRUCTURED JSON */}
         {activeTab === "json" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div style={{ fontSize: "11px", color: "#64748b" }}>
-              Edit or paste your company topology spec below:
+            <div style={{ fontSize: "10.5px", color: "#78716c", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              Edit or paste company topology JSON below:
             </div>
             <textarea
               value={jsonText}
               onChange={(e) => setJsonText(e.target.value)}
-              rows={12}
+              rows={11}
               style={{
                 width: "100%",
-                background: "#090d16",
-                border: "1px solid #1e293b",
-                borderRadius: "6px",
+                background: "#080706",
+                border: "1px solid #242220",
+                borderRadius: "8px",
                 padding: "12px",
                 fontFamily: "monospace",
-                fontSize: "12px",
-                color: "#34d399",
+                fontSize: "11px",
+                color: "#e0a35c",
                 resize: "vertical",
+                outline: "none",
+                boxSizing: "border-box"
               }}
             />
             <button
               onClick={handleJsonSubmit}
               disabled={isSubmitting}
               style={{
-                background: "#0891b2",
-                color: "#ffffff",
-                padding: "10px",
-                borderRadius: "6px",
-                fontWeight: 600,
-                fontSize: "13px",
+                background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                color: "#000000",
+                padding: "11px 18px",
+                borderRadius: "24px",
+                fontWeight: 700,
+                fontSize: "12px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
                 cursor: isSubmitting ? "not-allowed" : "pointer",
+                border: "none",
+                boxShadow: "0 4px 15px rgba(217, 119, 6, 0.3)",
               }}
             >
-              {isSubmitting ? "Creating FalkorDB Nodes & Edges..." : "Import Company to FalkorDB"}
+              {isSubmitting ? "Ingesting JSON & Building Subgraph..." : "Ingest JSON & Open Portal →"}
             </button>
           </div>
         )}
 
-        {/* Plain Text Import Tab */}
+        {/* TAB 3: PLAIN TEXT */}
         {activeTab === "text" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <div>
-              <label style={{ fontSize: "11px", color: "#64748b" }}>Company Name:</label>
+              <label style={{ fontSize: "10.5px", color: "#78716c", letterSpacing: "0.06em", textTransform: "uppercase" }}>Company Name:</label>
               <input
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 style={{
                   width: "100%",
-                  background: "#090d16",
-                  border: "1px solid #1e293b",
+                  background: "#080706",
+                  border: "1px solid #242220",
                   borderRadius: "6px",
                   padding: "8px 12px",
-                  color: "#f8fafc",
-                  fontSize: "13px",
+                  color: "#f5f5f4",
+                  fontSize: "12px",
                   marginTop: "4px",
+                  outline: "none",
+                  boxSizing: "border-box"
                 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: "11px", color: "#64748b" }}>Paste Architecture Notes / Dependencies:</label>
+              <label style={{ fontSize: "10.5px", color: "#78716c", letterSpacing: "0.06em", textTransform: "uppercase" }}>Paste Architecture Notes / Dependencies:</label>
               <textarea
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
-                rows={8}
+                rows={7}
                 style={{
                   width: "100%",
-                  background: "#090d16",
-                  border: "1px solid #1e293b",
+                  background: "#080706",
+                  border: "1px solid #242220",
                   borderRadius: "6px",
                   padding: "12px",
                   fontFamily: "monospace",
-                  fontSize: "12px",
-                  color: "#38bdf8",
+                  fontSize: "11px",
+                  color: "#e0a35c",
                   marginTop: "4px",
+                  outline: "none",
+                  boxSizing: "border-box"
                 }}
               />
             </div>
@@ -270,24 +416,57 @@ export const IngestModal: React.FC<IngestModalProps> = ({ isOpen, onClose, onIng
               onClick={handleTextSubmit}
               disabled={isSubmitting}
               style={{
-                background: "#0891b2",
-                color: "#ffffff",
-                padding: "10px",
-                borderRadius: "6px",
-                fontWeight: 600,
-                fontSize: "13px",
+                background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+                color: "#000000",
+                padding: "11px 18px",
+                borderRadius: "24px",
+                fontWeight: 700,
+                fontSize: "12px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
                 cursor: isSubmitting ? "not-allowed" : "pointer",
+                border: "none",
+                boxShadow: "0 4px 15px rgba(217, 119, 6, 0.3)",
               }}
             >
-              {isSubmitting ? "Parsing & Generating Graph..." : "Parse & Build FalkorDB Graph"}
+              {isSubmitting ? "Parsing & Building Graph..." : "Parse Text & Open Portal →"}
             </button>
           </div>
         )}
 
         {/* Status Message */}
         {statusMessage && (
-          <div style={{ padding: "8px 12px", background: "#1e293b", borderRadius: "6px", fontSize: "12px", color: "#38bdf8", display: "flex", alignItems: "center", gap: "6px" }}>
-            <CheckCircle2 size={14} color="#10b981" /> {statusMessage}
+          <div style={{ padding: "9px 14px", background: "#141210", border: "1px solid #242220", borderRadius: "8px", fontSize: "11.5px", color: "#e0a35c", display: "flex", alignItems: "center", gap: "8px" }}>
+            <CheckCircle2 size={15} color="#10b981" /> {statusMessage}
+          </div>
+        )}
+
+        {/* Bottom Link: Already loaded session */}
+        {onDirectEnter && (
+          <div style={{ borderTop: "1px solid #1f1d1b", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px" }}>
+            <span style={{ color: "#78716c" }}>Already have active data in FalkorDB?</span>
+            <button
+              onClick={() => {
+                onClose();
+                onDirectEnter();
+              }}
+              style={{
+                background: "transparent",
+                color: "#e0a35c",
+                cursor: "pointer",
+                border: "none",
+                fontSize: "11px",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <span>Directly Enter Portal</span>
+              <span>→</span>
+            </button>
           </div>
         )}
       </div>

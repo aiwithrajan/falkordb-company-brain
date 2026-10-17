@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from backend.agent import agent
 from backend.tools import apply_knowledge_correction, get_source_evidence
@@ -116,6 +116,42 @@ def ingest_json(data: Dict[str, Any]):
 def ingest_text(req: IngestTextRequest):
     try:
         res = ingest_text_architecture(req.text, req.company_name)
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+from backend.llm import generate_chat_reply, OPEN_SOURCE_MODELS
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: Optional[List[ChatMessage]] = []
+    model: Optional[str] = "llama-3.2"
+    custom_endpoint: Optional[str] = None
+    api_key: Optional[str] = None
+
+@app.get("/api/chat/models")
+def get_chat_models():
+    return {
+        "models": [
+            {"id": k, **v} for k, v in OPEN_SOURCE_MODELS.items()
+        ]
+    }
+
+@app.post("/api/chat")
+def chat_endpoint(req: ChatRequest):
+    try:
+        hist_dicts = [{"role": m.role, "content": m.content} for m in (req.history or [])]
+        res = generate_chat_reply(
+            message=req.message,
+            history=hist_dicts,
+            model_choice=req.model or "llama-3.2",
+            custom_endpoint=req.custom_endpoint,
+            api_key=req.api_key
+        )
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

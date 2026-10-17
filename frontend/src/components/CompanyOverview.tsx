@@ -4,15 +4,16 @@ import {
   Server,
   Users,
   UserCheck,
-  AlertTriangle,
   ShieldAlert,
-  FileText,
   RotateCcw,
   ExternalLink,
   Flame,
   GitPullRequest,
   Brain,
-  Sparkles
+  Sparkles,
+  Layers,
+  FileCheck,
+  FileText
 } from "lucide-react";
 
 interface CompanyOverviewProps {
@@ -22,6 +23,9 @@ interface CompanyOverviewProps {
   onOpenIngest: () => void;
   activeMode?: "overview" | "incident" | "architect";
   onSelectMode?: (mode: "overview" | "incident" | "architect") => void;
+  onGoHome?: () => void;
+  onOpenTour?: () => void;
+  onOpenDocs?: () => void;
 }
 
 export const CompanyOverview: React.FC<CompanyOverviewProps> = ({
@@ -30,57 +34,187 @@ export const CompanyOverview: React.FC<CompanyOverviewProps> = ({
   isResetting,
   onOpenIngest,
   activeMode = "overview",
-  onSelectMode
+  onSelectMode,
+  onGoHome,
+  onOpenTour,
+  onOpenDocs,
 }) => {
   const [showGuide, setShowGuide] = useState(false);
   if (!overview) return null;
   const { counts } = overview;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
-      {/* Top Header Banner */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1e293b", paddingBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#06b6d4", boxShadow: "0 0 12px #06b6d4" }}></div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "16px" }}>
+      {/* Top Header Banner matching Home Hero style */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid #242220",
+          paddingBottom: "14px",
+          flexWrap: "wrap",
+          gap: "12px",
+        }}
+      >
+        {/* Left: Brand Identity */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+            cursor: onGoHome ? "pointer" : "default",
+          }}
+          onClick={onGoHome}
+          title={onGoHome ? "Return to OrgMind Home Hero" : undefined}
+        >
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: "#e0a35c",
+              boxShadow: "0 0 12px #d97706",
+            }}
+          />
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <h1 style={{ fontSize: "19px", fontWeight: 700, color: "#f8fafc", letterSpacing: "-0.02em" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <h1
+                style={{
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  color: "#ffffff",
+                  textTransform: "uppercase",
+                  margin: 0,
+                }}
+              >
                 OrgMind
               </h1>
-              <span style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "12px", background: "rgba(6, 182, 212, 0.15)", color: "#22d3ee", border: "1px solid rgba(6, 182, 212, 0.3)" }}>
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  background: "rgba(224, 163, 92, 0.08)",
+                  color: "#e0a35c",
+                  border: "1px solid rgba(224, 163, 92, 0.25)",
+                }}
+              >
                 Track 3: Company Brain
               </span>
-              <span style={{ fontSize: "11px", fontWeight: 500, padding: "2px 8px", borderRadius: "12px", background: "rgba(16, 185, 129, 0.15)", color: "#34d399", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-                ⚡ FalkorDB Native
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  background: "#141210",
+                  color: "#a8a29e",
+                  border: "1px solid #292524",
+                }}
+              >
+                FalkorDB Native
               </span>
             </div>
-            <div style={{ fontSize: "12px", color: "#94a3b8" }}>
-              Living Graph of <strong style={{ color: "#f1f5f9" }}>{overview.company_name}</strong> — Microservices, ADR Policies, People & Incidents
+            <div
+              style={{
+                fontSize: "10px",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "#78716c",
+                marginTop: "3px",
+              }}
+            >
+              Living Knowledge Graph of <strong style={{ color: "#e7e5e4" }}>{overview.company_name}</strong>
             </div>
           </div>
         </div>
 
-        {/* Action Controls & External Links */}
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        {/* Right: Action Controls matching luxury pill buttons */}
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          {onGoHome && (
+            <button
+              onClick={onGoHome}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "rgba(255, 255, 255, 0.03)",
+                color: "#f5f5f4",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
+                padding: "6px 16px",
+                borderRadius: "20px",
+                fontSize: "11px",
+                fontWeight: 500,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              ✦ Home
+            </button>
+          )}
+
           <button
-            onClick={() => setShowGuide(!showGuide)}
+            onClick={() => {
+              if (onOpenTour) {
+                onOpenTour();
+              } else {
+                setShowGuide(!showGuide);
+              }
+            }}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "5px",
-              background: showGuide ? "rgba(168, 85, 247, 0.2)" : "#1e293b",
-              color: showGuide ? "#c084fc" : "#cbd5e1",
-              border: showGuide ? "1px solid #a855f7" : "1px solid #334155",
-              padding: "6px 12px",
-              borderRadius: "6px",
-              fontSize: "12px",
+              gap: "6px",
+              background: "#0e0d0c",
+              color: "#e0a35c",
+              border: "1px solid #242220",
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontSize: "11px",
               fontWeight: 500,
-              cursor: "pointer"
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: "pointer",
             }}
           >
-            <Sparkles size={13} color={showGuide ? "#c084fc" : "#94a3b8"} />
-            {showGuide ? "Hide Feature Tour" : "⚡ Feature Guide"}
+            <Sparkles size={12} color="#e0a35c" />
+            Feature Tour
           </button>
+
+          {onOpenDocs && (
+            <button
+              onClick={onOpenDocs}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#141210",
+                color: "#e0a35c",
+                border: "1px solid rgba(224, 163, 92, 0.45)",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                fontSize: "11px",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                boxShadow: "0 2px 10px rgba(224, 163, 92, 0.15)",
+              }}
+              title="Open Technical Documentation"
+            >
+              <FileText size={12} color="#e0a35c" />
+              Documentation
+            </button>
+          )}
 
           <button
             onClick={onOpenIngest}
@@ -88,19 +222,21 @@ export const CompanyOverview: React.FC<CompanyOverviewProps> = ({
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              background: "#0891b2",
-              color: "#ffffff",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              fontSize: "12px",
+              background: "#d97706",
+              color: "#000000",
+              padding: "6px 16px",
+              borderRadius: "20px",
+              fontSize: "11px",
               fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
               cursor: "pointer",
               border: "none",
-              boxShadow: "0 2px 8px rgba(8, 145, 178, 0.3)"
+              boxShadow: "0 2px 10px rgba(217, 119, 6, 0.25)",
             }}
-            title="Import your own company's microservices and architecture"
+            title="Import custom enterprise architecture"
           >
-            📥 Ingest Company Data
+            📥 Ingest Data
           </button>
 
           <a
@@ -110,17 +246,19 @@ export const CompanyOverview: React.FC<CompanyOverviewProps> = ({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              background: "#1e293b",
-              color: "#38bdf8",
-              padding: "6px 12px",
-              borderRadius: "6px",
-              fontSize: "12px",
+              gap: "5px",
+              background: "#0e0d0c",
+              color: "#d4d4d4",
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontSize: "11px",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
               textDecoration: "none",
-              border: "1px solid #334155"
+              border: "1px solid #242220",
             }}
           >
-            FalkorDB Browser (:3000) <ExternalLink size={12} />
+            FalkorDB :3000 <ExternalLink size={11} />
           </a>
 
           <button
@@ -129,18 +267,20 @@ export const CompanyOverview: React.FC<CompanyOverviewProps> = ({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              background: "#334155",
-              color: "#f8fafc",
-              padding: "6px 12px",
-              borderRadius: "6px",
-              fontSize: "12px",
+              gap: "5px",
+              background: "#141210",
+              color: "#a8a29e",
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontSize: "11px",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
               cursor: isResetting ? "not-allowed" : "pointer",
-              border: "none"
+              border: "1px solid #242220",
             }}
-            title="Reset to clean initial state with seeded policy conflict"
+            title="Reset to clean initial state"
           >
-            <RotateCcw size={12} /> {isResetting ? "Resetting..." : "Reset Demo"}
+            <RotateCcw size={11} /> {isResetting ? "..." : "Reset"}
           </button>
         </div>
       </div>
@@ -149,132 +289,186 @@ export const CompanyOverview: React.FC<CompanyOverviewProps> = ({
       {showGuide && (
         <div
           style={{
-            background: "linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95))",
-            border: "1px solid #3b82f6",
-            borderRadius: "8px",
-            padding: "14px 16px",
+            background: "#0c0a09",
+            border: "1px solid #292524",
+            borderRadius: "10px",
+            padding: "16px",
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "14px"
+            gap: "14px",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.6)",
           }}
         >
           <div
             onClick={() => onSelectMode && onSelectMode("incident")}
             style={{
-              background: activeMode === "incident" ? "rgba(239, 68, 68, 0.15)" : "rgba(239, 68, 68, 0.08)",
-              border: activeMode === "incident" ? "2px solid #ef4444" : "1px solid rgba(239, 68, 68, 0.3)",
-              borderRadius: "6px",
-              padding: "10px 12px",
+              background: activeMode === "incident" ? "rgba(220, 38, 38, 0.12)" : "#141210",
+              border: activeMode === "incident" ? "1px solid #ef4444" : "1px solid #242220",
+              borderRadius: "8px",
+              padding: "12px 14px",
               cursor: "pointer",
-              transition: "transform 0.15s"
+              transition: "all 0.15s ease",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f87171", fontWeight: 700, fontSize: "12.5px" }}>
-              <Flame size={15} /> 1. Incident Commander (P0) {activeMode === "incident" ? "• ACTIVE" : ""}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f87171", fontWeight: 600, fontSize: "12px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              <Flame size={14} /> 1. Incident Commander {activeMode === "incident" ? "• Active" : ""}
             </div>
-            <div style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px", lineHeight: 1.4 }}>
-              FalkorDB traces multi-hop blast radius, matches historical post-mortem INC-8812, and mobilizes the on-call incident squad.
-            </div>
-            <div style={{ fontSize: "10px", color: "#fca5a5", fontWeight: 600, marginTop: "6px" }}>
-              👉 Click to activate Outage Triage
+            <div style={{ fontSize: "11px", color: "#a8a29e", marginTop: "6px", lineHeight: 1.5 }}>
+              Traces multi-hop blast radius in FalkorDB, retrieves historical post-mortem INC-8812, and mobilizes on-call responders.
             </div>
           </div>
 
           <div
             onClick={() => onSelectMode && onSelectMode("architect")}
             style={{
-              background: activeMode === "architect" ? "rgba(168, 85, 247, 0.15)" : "rgba(168, 85, 247, 0.08)",
-              border: activeMode === "architect" ? "2px solid #a855f7" : "1px solid rgba(168, 85, 247, 0.3)",
-              borderRadius: "6px",
-              padding: "10px 12px",
+              background: activeMode === "architect" ? "rgba(224, 163, 92, 0.12)" : "#141210",
+              border: activeMode === "architect" ? "1px solid #e0a35c" : "1px solid #242220",
+              borderRadius: "8px",
+              padding: "12px 14px",
               cursor: "pointer",
-              transition: "transform 0.15s"
+              transition: "all 0.15s ease",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#c084fc", fontWeight: 700, fontSize: "12.5px" }}>
-              <GitPullRequest size={15} /> 2. AI Staff Architect (PR Drift) {activeMode === "architect" ? "• ACTIVE" : ""}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#e0a35c", fontWeight: 600, fontSize: "12px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              <GitPullRequest size={14} /> 2. AI Staff Architect {activeMode === "architect" ? "• Active" : ""}
             </div>
-            <div style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px", lineHeight: 1.4 }}>
-              Blocks PR #318 attempting to revert Payments to HMAC keys, citing approved ADR-042 and preventing historical regression.
-            </div>
-            <div style={{ fontSize: "10px", color: "#d8b4fe", fontWeight: 600, marginTop: "6px" }}>
-              👉 Click to activate PR Drift Guard
+            <div style={{ fontSize: "11px", color: "#a8a29e", marginTop: "6px", lineHeight: 1.5 }}>
+              Blocks PR #318 attempting to revert Payments to HMAC keys, citing approved ADR-042 and preventing architecture drift.
             </div>
           </div>
 
           <div
             onClick={() => onSelectMode && onSelectMode("overview")}
             style={{
-              background: activeMode === "overview" ? "rgba(6, 182, 212, 0.15)" : "rgba(6, 182, 212, 0.08)",
-              border: activeMode === "overview" ? "2px solid #06b6d4" : "1px solid rgba(6, 182, 212, 0.3)",
-              borderRadius: "6px",
-              padding: "10px 12px",
+              background: activeMode === "overview" ? "rgba(217, 119, 6, 0.15)" : "#141210",
+              border: activeMode === "overview" ? "1px solid #d97706" : "1px solid #242220",
+              borderRadius: "8px",
+              padding: "12px 14px",
               cursor: "pointer",
-              transition: "transform 0.15s"
+              transition: "all 0.15s ease",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#22d3ee", fontWeight: 700, fontSize: "12.5px" }}>
-              <Brain size={15} /> 3. Living Graph & 1-Click Heal {activeMode === "overview" ? "• ACTIVE" : ""}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f5d59f", fontWeight: 600, fontSize: "12px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              <Brain size={14} /> 3. Institutional Memory {activeMode === "overview" ? "• Active" : ""}
             </div>
-            <div style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px", lineHeight: 1.4 }}>
-              Detects contradiction between RFC-102 (AUTH-V1) and ADR-042 (AUTH-V2). Resolves it in FalkorDB with 1-click healing.
-            </div>
-            <div style={{ fontSize: "10px", color: "#67e8f9", fontWeight: 600, marginTop: "6px" }}>
-              👉 Click to explore Institutional Memory
+            <div style={{ fontSize: "11px", color: "#a8a29e", marginTop: "6px", lineHeight: 1.5 }}>
+              Detects contradiction between RFC-102 and ADR-042. Resolves it with 1-click healing directly inside FalkorDB.
             </div>
           </div>
         </div>
       )}
 
-      {/* KPI Cards */}
+      {/* 6 Minimalist Luxury KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "10px" }}>
-        <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <Server size={18} color="#06b6d4" />
+        <div
+          style={{
+            background: "#0c0a09",
+            border: "1px solid #242220",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <Server size={17} color="#e0a35c" />
           <div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase" }}>Services</div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#f8fafc" }}>{counts.services}</div>
+            <div style={{ fontSize: "10px", color: "#78716c", letterSpacing: "0.14em", textTransform: "uppercase" }}>Services</div>
+            <div style={{ fontSize: "17px", fontWeight: 600, color: "#f5f5f4" }}>{counts.services}</div>
           </div>
         </div>
 
-        <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <Users size={18} color="#3b82f6" />
+        <div
+          style={{
+            background: "#0c0a09",
+            border: "1px solid #242220",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <Users size={17} color="#a8a29e" />
           <div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase" }}>Teams</div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#f8fafc" }}>{counts.teams}</div>
+            <div style={{ fontSize: "10px", color: "#78716c", letterSpacing: "0.14em", textTransform: "uppercase" }}>Teams</div>
+            <div style={{ fontSize: "17px", fontWeight: 600, color: "#f5f5f4" }}>{counts.teams}</div>
           </div>
         </div>
 
-        <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <UserCheck size={18} color="#818cf8" />
+        <div
+          style={{
+            background: "#0c0a09",
+            border: "1px solid #242220",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <UserCheck size={17} color="#d4d4d4" />
           <div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase" }}>Engineers</div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#f8fafc" }}>{counts.people}</div>
+            <div style={{ fontSize: "10px", color: "#78716c", letterSpacing: "0.14em", textTransform: "uppercase" }}>Engineers</div>
+            <div style={{ fontSize: "17px", fontWeight: 600, color: "#f5f5f4" }}>{counts.people}</div>
           </div>
         </div>
 
-        <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <ShieldAlert size={18} color="#ef4444" />
+        <div
+          style={{
+            background: "#0c0a09",
+            border: counts.incidents > 0 ? "1px solid rgba(239, 68, 68, 0.4)" : "1px solid #242220",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <ShieldAlert size={17} color={counts.incidents > 0 ? "#f87171" : "#78716c"} />
           <div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase" }}>Incidents (P0)</div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#ef4444" }}>{counts.incidents}</div>
-          </div>
-        </div>
-
-        <div style={{ background: "#0f172a", border: counts.active_conflicts > 0 ? "1px solid #f59e0b" : "1px solid #1e293b", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <AlertTriangle size={18} color={counts.active_conflicts > 0 ? "#f59e0b" : "#10b981"} />
-          <div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase" }}>Policy Conflicts</div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: counts.active_conflicts > 0 ? "#f59e0b" : "#10b981" }}>
-              {counts.active_conflicts} {counts.active_conflicts > 0 ? "⚠️" : "✓"}
+            <div style={{ fontSize: "10px", color: "#78716c", letterSpacing: "0.14em", textTransform: "uppercase" }}>Incidents (P0)</div>
+            <div style={{ fontSize: "17px", fontWeight: 600, color: counts.incidents > 0 ? "#f87171" : "#f5f5f4" }}>
+              {counts.incidents}
             </div>
           </div>
         </div>
 
-        <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <FileText size={18} color="#a78bfa" />
+        <div
+          style={{
+            background: "#0c0a09",
+            border: counts.active_conflicts > 0 ? "1px solid rgba(224, 163, 92, 0.5)" : "1px solid #242220",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <FileCheck size={17} color={counts.active_conflicts > 0 ? "#e0a35c" : "#10b981"} />
           <div>
-            <div style={{ fontSize: "11px", color: "#94a3b8", textTransform: "uppercase" }}>Decisions / ADR</div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "#f8fafc" }}>{counts.decisions}</div>
+            <div style={{ fontSize: "10px", color: "#78716c", letterSpacing: "0.14em", textTransform: "uppercase" }}>Policy Conflicts</div>
+            <div style={{ fontSize: "17px", fontWeight: 600, color: counts.active_conflicts > 0 ? "#e0a35c" : "#34d399" }}>
+              {counts.active_conflicts > 0 ? `${counts.active_conflicts} Active` : "0 ✓"}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: "#0c0a09",
+            border: "1px solid #242220",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <Layers size={17} color="#e0a35c" />
+          <div>
+            <div style={{ fontSize: "10px", color: "#78716c", letterSpacing: "0.14em", textTransform: "uppercase" }}>Decisions / ADR</div>
+            <div style={{ fontSize: "17px", fontWeight: 600, color: "#f5f5f4" }}>{counts.decisions}</div>
           </div>
         </div>
       </div>

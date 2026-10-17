@@ -5,16 +5,17 @@ import {
   CheckCircle,
   AlertTriangle,
   BookOpen,
-  ShieldAlert,
-  Scale,
   Brain,
   Copy,
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Flame,
   GitPullRequest,
-  Users
+  Users,
+  ShieldAlert,
+  Scale
 } from "lucide-react";
 
 interface InvestigationPanelProps {
@@ -24,6 +25,9 @@ interface InvestigationPanelProps {
   onApproveCorrection: (claimId: string) => void;
   isApproving: boolean;
   onOpenEvidence: (uri: string) => void;
+  onJumpToCanvas?: () => void;
+  activeMode?: "overview" | "incident" | "architect";
+  onSelectMode?: (mode: "overview" | "incident" | "architect") => void;
 }
 
 export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
@@ -33,8 +37,13 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
   onApproveCorrection,
   isApproving,
   onOpenEvidence,
+  onJumpToCanvas,
+  activeMode: activeModeProp,
+  onSelectMode,
 }) => {
-  const [activeMode, setActiveMode] = useState<"overview" | "incident" | "architect">("overview");
+  const [internalMode, setInternalMode] = useState<"overview" | "incident" | "architect">("overview");
+  const activeMode = activeModeProp || internalMode;
+
   const [customQuery, setCustomQuery] = useState("");
   const [copiedAction, setCopiedAction] = useState(false);
   const [openTraceIndex, setOpenTraceIndex] = useState<number | null>(null);
@@ -43,46 +52,68 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
   const scenarios = [
     {
       id: "overview" as const,
+      index: 1,
+      shortTitle: "Company Knowledge",
       title: "Company Knowledge & Decisions",
       tagline: "Track Ownership, Architecture & Stale Claims",
-      icon: <Brain size={18} color="#06b6d4" />,
-      accentColor: "#0891b2",
+      icon: <Brain size={17} color="#e0a35c" />,
+      accentColor: "#d97706",
       prompt: "Explain how Payments works, who owns it, and what could be affected if Identity authentication changes.",
-      badge: "Institutional Memory"
+      badge: "Institutional Memory",
+      stepDescription: "Live graph traversal across microservice ownership, ADR standards, and knowledge conflict resolution."
     },
     {
       id: "incident" as const,
+      index: 2,
+      shortTitle: "Incident War Room",
       title: "P0 Incident Commander",
       tagline: "Outage Blast Radius & Automated Squad Dispatch",
-      icon: <Flame size={18} color="#ef4444" />,
+      icon: <Flame size={17} color="#f87171" />,
       accentColor: "#dc2626",
       prompt: "P0 Alert: payments-svc 500 auth cascade. Trace blast radius, historical precedents, and mobilize responders.",
-      badge: "Firefighting Mode"
+      badge: "War Room Mode",
+      stepDescription: "5-hop blast radius calculation, historical incident INC-8812 matching, and on-call Slack mobilization."
     },
     {
       id: "architect" as const,
+      index: 3,
+      shortTitle: "Staff Architect Guard",
       title: "AI Staff Architect Guard",
       tagline: "Prevent Architectural Drift & Code Regressions",
-      icon: <GitPullRequest size={18} color="#a855f7" />,
-      accentColor: "#7c3aed",
+      icon: <GitPullRequest size={17} color="#f5d59f" />,
+      accentColor: "#b45309",
       prompt: "Review PR #318: Revert Payments authentication to symmetric HMAC key headers. Check architectural drift.",
-      badge: "Fire Prevention Mode"
+      badge: "Drift Guard Mode",
+      stepDescription: "Architectural drift gating against ADR-042 standards to stop regression before code reaches production."
     }
   ];
 
-  const handleSelectScenario = (scenarioId: "overview" | "incident" | "architect") => {
-    setActiveMode(scenarioId);
-    const target = scenarios.find((s) => s.id === scenarioId);
+  const activeIndex = Math.max(0, scenarios.findIndex((s) => s.id === activeMode));
+  const activeScenario = scenarios[activeIndex];
+
+  const handleSlideSelect = (slideIndex: number) => {
+    const target = scenarios[slideIndex];
     if (target) {
+      setInternalMode(target.id);
+      if (onSelectMode) onSelectMode(target.id);
       setCustomQuery(target.prompt);
-      onInvestigate(target.prompt, scenarioId);
+      onInvestigate(target.prompt, target.id);
     }
+  };
+
+  const handlePrevSlide = () => {
+    if (activeIndex > 0) handleSlideSelect(activeIndex - 1);
+  };
+
+  const handleNextSlide = () => {
+    if (activeIndex < scenarios.length - 1) handleSlideSelect(activeIndex + 1);
   };
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (customQuery.trim()) {
-      onInvestigate(customQuery, activeMode);
+    const queryToRun = customQuery.trim() || activeScenario.prompt;
+    if (queryToRun) {
+      onInvestigate(queryToRun, activeMode);
     }
   };
 
@@ -93,95 +124,351 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "14px", paddingRight: "4px" }}>
-      
-      {/* SECTION 1: PROMINENT FEATURE SELECTOR CARDS */}
-      <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>
-            Step 1: Choose Enterprise Capability
-          </span>
-          <span style={{ fontSize: "11px", color: "#64748b" }}>Powered by FalkorDB Graph</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* ============================================================== */}
+      {/* CONTAINER 1: COMMAND CENTER & CAPABILITY SLIDER (ENDS BELOW)   */}
+      {/* ============================================================== */}
+      <div
+        style={{
+          background: "#0c0a09",
+          border: "1px solid #242220",
+          borderRadius: "16px",
+          padding: "24px 28px",
+          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
+        {/* 1. CONTAINER HEADER BANNER: Title & Subtitle + Jump Button */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid #1f1d1b",
+          paddingBottom: "16px",
+          flexWrap: "wrap",
+          gap: "12px",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: "10.5px",
+              letterSpacing: "0.18em",
+              color: "#e0a35c",
+              textTransform: "uppercase",
+              fontWeight: 600,
+            }}
+          >
+            AI COMMAND & INVESTIGATION
+          </div>
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              color: "#ffffff",
+              margin: "4px 0 0 0",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Enterprise Knowledge & Incident Investigation
+          </h2>
+          <p style={{ fontSize: "12px", color: "#a8a29e", margin: "3px 0 0 0" }}>
+            Select an operational capability or query the FalkorDB graph in natural language.
+          </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
-          {scenarios.map((sc) => {
-            const isSelected = activeMode === sc.id;
-            return (
-              <div
-                key={sc.id}
-                onClick={() => handleSelectScenario(sc.id)}
-                style={{
-                  background: isSelected ? "rgba(15, 23, 42, 0.9)" : "#0f172a",
-                  border: isSelected ? `2px solid ${sc.accentColor}` : "1px solid #1e293b",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  transition: "all 0.15s ease",
-                  boxShadow: isSelected ? `0 0 15px -3px ${sc.accentColor}40` : "none"
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ padding: "8px", background: "#1e293b", borderRadius: "6px" }}>
-                    {sc.icon}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: isSelected ? "#ffffff" : "#e2e8f0" }}>
-                      {sc.title}
-                    </div>
-                    <div style={{ fontSize: "11px", color: "#94a3b8" }}>
-                      {sc.tagline}
-                    </div>
-                  </div>
-                </div>
+        {onJumpToCanvas && (
+          <button
+            onClick={onJumpToCanvas}
+            style={{
+              background: "#141210",
+              color: "#e0a35c",
+              border: "1px solid #242220",
+              padding: "7px 16px",
+              borderRadius: "20px",
+              fontSize: "11px",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            ↑ Jump to Graph Canvas
+          </button>
+        )}
+      </div>
 
-                <span
+      {/* 2. STEP 1: CAPABILITY SLIDER (1, 2, 3) */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          background: "#080706",
+          border: "1px solid #1f1d1b",
+          borderRadius: "10px",
+          padding: "10px 14px",
+        }}
+      >
+        {/* Left Indicator */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: activeScenario.accentColor,
+            }}
+          >
+            STEP 1: CAPABILITY SLIDER
+          </span>
+          <span style={{ color: "#3f3f46" }}>•</span>
+          <span style={{ fontSize: "11px", color: "#a8a29e", fontWeight: 500 }}>
+            Slide {activeIndex + 1} of 3:{" "}
+            <strong style={{ color: "#f5f5f4" }}>{activeScenario.title}</strong>
+          </span>
+        </div>
+
+        {/* Right Slider Tabs: [1] [2] [3] + Arrows */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "4px",
+              background: "#141210",
+              padding: "3px",
+              borderRadius: "20px",
+              border: "1px solid #242220",
+            }}
+          >
+            {scenarios.map((sc, idx) => {
+              const isSelected = activeIndex === idx;
+              return (
+                <button
+                  key={sc.id}
+                  onClick={() => handleSlideSelect(idx)}
                   style={{
-                    fontSize: "10px",
-                    fontWeight: 600,
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                    background: isSelected ? sc.accentColor : "#1e293b",
-                    color: isSelected ? "#ffffff" : "#94a3b8",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em"
+                    background: isSelected ? sc.accentColor : "transparent",
+                    color: isSelected
+                      ? sc.id === "incident"
+                        ? "#ffffff"
+                        : "#000000"
+                      : "#a8a29e",
+                    border: "none",
+                    borderRadius: "16px",
+                    padding: "5px 14px",
+                    fontSize: "11px",
+                    fontWeight: isSelected ? 700 : 500,
+                    letterSpacing: "0.06em",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    transition: "all 0.2s ease",
                   }}
                 >
-                  {sc.badge}
-                </span>
-              </div>
-            );
-          })}
+                  <span
+                    style={{
+                      fontFamily: "monospace",
+                      fontWeight: 800,
+                      background: isSelected
+                        ? "rgba(0, 0, 0, 0.25)"
+                        : "rgba(255, 255, 255, 0.08)",
+                      color: isSelected ? "#ffffff" : "#d6d3d1",
+                      borderRadius: "50%",
+                      width: "16px",
+                      height: "16px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "10px",
+                    }}
+                  >
+                    {idx + 1}
+                  </span>
+                  <span>{sc.shortTitle}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Prev & Next slider arrows */}
+          <div style={{ display: "flex", gap: "4px" }}>
+            <button
+              onClick={handlePrevSlide}
+              disabled={activeIndex === 0}
+              style={{
+                background: "#141210",
+                border: "1px solid #242220",
+                color: activeIndex === 0 ? "#52525b" : "#e0a35c",
+                borderRadius: "50%",
+                width: "28px",
+                height: "28px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: activeIndex === 0 ? "not-allowed" : "pointer",
+                transition: "all 0.2s ease",
+              }}
+              title="Previous Slide"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              onClick={handleNextSlide}
+              disabled={activeIndex === scenarios.length - 1}
+              style={{
+                background: "#141210",
+                border: "1px solid #242220",
+                color:
+                  activeIndex === scenarios.length - 1
+                    ? "#52525b"
+                    : "#e0a35c",
+                borderRadius: "50%",
+                width: "28px",
+                height: "28px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor:
+                  activeIndex === scenarios.length - 1
+                    ? "not-allowed"
+                    : "pointer",
+                transition: "all 0.2s ease",
+              }}
+              title="Next Slide"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* SECTION 2: PROMPT & QUERY EXECUTION BOX */}
-      <form onSubmit={handleCustomSubmit} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      {/* 3. ACTIVE SLIDE FOCUSED CAPABILITY HIGHLIGHT */}
+      <div
+        style={{
+          background: `linear-gradient(135deg, ${activeScenario.accentColor}12 0%, #0c0a09 100%)`,
+          border: `1px solid ${activeScenario.accentColor}50`,
+          borderRadius: "10px",
+          padding: "16px 20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "14px",
+          boxShadow: `0 4px 20px ${activeScenario.accentColor}15`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div
+            style={{
+              padding: "10px",
+              background: "#141210",
+              border: `1px solid ${activeScenario.accentColor}60`,
+              borderRadius: "8px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {activeScenario.icon}
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {activeScenario.index}. {activeScenario.title}
+              </span>
+              <span
+                style={{
+                  fontSize: "9.5px",
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  background: activeScenario.accentColor,
+                  color:
+                    activeScenario.id === "incident"
+                      ? "#ffffff"
+                      : "#000000",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {activeScenario.badge}
+              </span>
+            </div>
+            <div style={{ fontSize: "11.5px", color: "#a8a29e", marginTop: "3px" }}>
+              {activeScenario.stepDescription}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            setCustomQuery(activeScenario.prompt);
+            onInvestigate(activeScenario.prompt, activeScenario.id);
+          }}
+          disabled={isLoading}
+          style={{
+            background: "#141210",
+            color: activeScenario.accentColor,
+            border: `1px solid ${activeScenario.accentColor}60`,
+            padding: "6px 14px",
+            borderRadius: "20px",
+            fontSize: "11px",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+            cursor: isLoading ? "not-allowed" : "pointer",
+            transition: "all 0.2s ease",
+          }}
+        >
+          {isLoading ? "Running..." : "Run Scenario ↻"}
+        </button>
+      </div>
+
+      {/* 4. NATURAL LANGUAGE QUERY EXECUTION FOR ACTIVE SLIDE */}
+      <form onSubmit={handleCustomSubmit} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>
-            Step 2: Natural Language Investigation
+          <span style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em", color: "#78716c" }}>
+            Natural Language Investigation ({activeScenario.shortTitle})
+          </span>
+          <span style={{ fontSize: "10px", color: "#57534e", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            FalkorDB Cypher Engine Active
           </span>
         </div>
 
         <div style={{ position: "relative" }}>
           <textarea
-            value={customQuery || scenarios.find(s => s.id === activeMode)?.prompt}
+            value={customQuery || activeScenario.prompt}
             onChange={(e) => setCustomQuery(e.target.value)}
             rows={2}
             placeholder="Type any architecture, outage, or policy question..."
             style={{
               width: "100%",
-              background: "#090d16",
-              border: "1px solid #334155",
-              borderRadius: "6px",
-              padding: "10px 12px",
-              color: "#f8fafc",
+              background: "#080706",
+              border: "1px solid #242220",
+              borderRadius: "8px",
+              padding: "10px 14px",
+              color: "#f5f5f4",
               fontSize: "12px",
               lineHeight: 1.5,
-              resize: "none"
+              resize: "none",
+              outline: "none",
+              boxSizing: "border-box"
             }}
           />
         </div>
@@ -191,29 +478,133 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
             type="submit"
             disabled={isLoading}
             style={{
-              background: activeMode === "incident" ? "#dc2626" : activeMode === "architect" ? "#7c3aed" : "#0891b2",
-              color: "#ffffff",
-              padding: "7px 16px",
-              borderRadius: "6px",
-              fontWeight: 600,
-              fontSize: "12px",
+              background: `linear-gradient(135deg, ${activeScenario.accentColor}, #b45309)`,
+              color: activeScenario.id === "incident" ? "#ffffff" : "#000000",
+              padding: "7px 18px",
+              borderRadius: "20px",
+              fontWeight: 700,
+              fontSize: "11px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              cursor: isLoading ? "not-allowed" : "pointer"
+              cursor: isLoading ? "not-allowed" : "pointer",
+              border: "none",
+              boxShadow: `0 2px 10px ${activeScenario.accentColor}35`
             }}
           >
-            <Search size={14} /> {isLoading ? "Querying FalkorDB Graph..." : "Execute Investigation"}
+            <Search size={13} color={activeScenario.id === "incident" ? "#ffffff" : "#000000"} />
+            {isLoading ? `Querying Graph (${activeScenario.shortTitle})...` : "Execute Investigation"}
           </button>
         </div>
       </form>
+    </div>
+
+    {/* ============================================================== */}
+    {/* CONTAINER 2: DEDICATED WORKSPACE & GRAPH OUTCOMES (NEW)       */}
+    {/* ============================================================== */}
+    <div
+      style={{
+        background: "#0c0a09",
+        border: "1px solid #242220",
+        borderRadius: "16px",
+        padding: "24px 28px",
+        boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "18px",
+      }}
+    >
+      {/* Container 2 Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "1px solid #1f1d1b",
+          paddingBottom: "14px",
+          flexWrap: "wrap",
+          gap: "10px",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.18em",
+              color: activeScenario.accentColor,
+              textTransform: "uppercase",
+              fontWeight: 700,
+            }}
+          >
+            STEP 2: GRAPH INTELLIGENCE & WORKSPACE
+          </div>
+          <h3
+            style={{
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "#ffffff",
+              margin: "3px 0 0 0",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {activeScenario.shortTitle} — Live Analysis & Outcomes
+          </h3>
+        </div>
+        <span
+          style={{
+            fontSize: "10px",
+            color: "#78716c",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          Audit Status: 100% Provenance Guaranteed
+        </span>
+      </div>
+
+      {/* Loading Indicator inside Container 2 */}
+      {isLoading && (
+        <div
+          style={{
+            background: "#080706",
+            border: `1px dashed ${activeScenario.accentColor}60`,
+            borderRadius: "10px",
+            padding: "28px 20px",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <div
+            style={{
+              width: "28px",
+              height: "28px",
+              borderRadius: "50%",
+              border: `2px solid ${activeScenario.accentColor}`,
+              borderTopColor: "transparent",
+              animation: "spin 0.8s linear infinite",
+            }}
+          />
+          <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>
+            Traversing FalkorDB Graph for {activeScenario.title}...
+          </div>
+          <div style={{ fontSize: "11px", color: "#a8a29e" }}>
+            Executing multi-hop Cypher queries and synthesizing enterprise provenance.
+          </div>
+        </div>
+      )}
 
       {/* SECTION 3: HUMAN-IN-THE-LOOP CONFLICT RESOLUTION ALERT */}
       {investigation?.pending_correction && (
         <div
           style={{
-            background: "rgba(245, 158, 11, 0.08)",
-            border: "1px solid #f59e0b",
+            background: "rgba(217, 119, 6, 0.08)",
+            border: "1px solid #d97706",
             borderRadius: "8px",
             padding: "12px 14px",
             display: "flex",
@@ -222,13 +613,13 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
           }}
           className="pulse-warning"
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#fbbf24", fontWeight: 600, fontSize: "12.5px" }}>
-            <AlertTriangle size={16} />
-            <span>Active Knowledge Conflict Detected in Graph!</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#e0a35c", fontWeight: 600, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <AlertTriangle size={15} color="#e0a35c" />
+            <span>Active Knowledge Conflict Detected in Graph</span>
           </div>
 
-          <div style={{ fontSize: "11.5px", color: "#cbd5e1", lineHeight: 1.5 }}>
-            RFC-102 references deprecated <strong style={{ color: "#f87171" }}>AUTH-V1</strong>, while approved ADR-042 requires <strong style={{ color: "#34d399" }}>AUTH-V2</strong>.
+          <div style={{ fontSize: "11.5px", color: "#d6d3d1", lineHeight: 1.5 }}>
+            RFC-102 references deprecated <strong style={{ color: "#f87171" }}>AUTH-V1</strong>, while approved ADR-042 mandates <strong style={{ color: "#34d399" }}>AUTH-V2</strong>.
           </div>
 
           <div style={{ display: "flex", gap: "8px", marginTop: "2px" }}>
@@ -236,34 +627,41 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
               onClick={() => onApproveCorrection(investigation.pending_correction!.claim_id)}
               disabled={isApproving}
               style={{
-                background: "#059669",
-                color: "#ffffff",
+                background: "#d97706",
+                color: "#000000",
                 padding: "6px 14px",
-                borderRadius: "5px",
+                borderRadius: "20px",
                 fontWeight: 600,
-                fontSize: "11.5px",
+                fontSize: "11px",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                cursor: isApproving ? "not-allowed" : "pointer"
+                gap: "5px",
+                cursor: isApproving ? "not-allowed" : "pointer",
+                border: "none"
               }}
             >
-              <CheckCircle size={13} /> {isApproving ? "Updating FalkorDB..." : "1-Click Approve Correction"}
+              <CheckCircle size={12} /> {isApproving ? "Updating FalkorDB..." : "1-Click Approve Correction"}
             </button>
             <button
               onClick={() => onOpenEvidence("synthetic_data/DOC-DEC-042.md")}
               style={{
-                background: "#1e293b",
-                color: "#38bdf8",
+                background: "#141210",
+                color: "#e0a35c",
+                border: "1px solid #242220",
                 padding: "6px 12px",
-                borderRadius: "5px",
-                fontSize: "11.5px",
+                borderRadius: "20px",
+                fontSize: "11px",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
                 display: "flex",
                 alignItems: "center",
-                gap: "4px"
+                gap: "4px",
+                cursor: "pointer"
               }}
             >
-              <BookOpen size={13} /> View ADR-042
+              <BookOpen size={12} /> View ADR-042
             </button>
           </div>
         </div>
@@ -291,12 +689,12 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 10px #ef4444" }}></div>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 8px #ef4444" }}></div>
                   <div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#fca5a5" }}>
-                      🚨 P0 WAR-ROOM ACTIVE: payments-svc 500 Cascade
+                    <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#fca5a5", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                      🚨 P0 War-Room Active: payments-svc 500 Cascade
                     </div>
-                    <div style={{ fontSize: "11px", color: "#cbd5e1" }}>
+                    <div style={{ fontSize: "10.5px", color: "#a8a29e", marginTop: "2px" }}>
                       Status: <strong style={{ color: "#ef4444" }}>TRIAGING</strong> • Criticality: <strong style={{ color: "#ef4444" }}>P0 / Tier 1</strong> • Graph Traversal: 5 Hops
                     </div>
                   </div>
@@ -306,10 +704,12 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                   style={{
                     background: "#dc2626",
                     color: "#ffffff",
-                    padding: "6px 12px",
-                    borderRadius: "5px",
-                    fontSize: "11.5px",
+                    padding: "5px 12px",
+                    borderRadius: "20px",
+                    fontSize: "11px",
                     fontWeight: 600,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
                     display: "flex",
                     alignItems: "center",
                     gap: "5px",
@@ -318,70 +718,70 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                   }}
                 >
                   {copiedAction ? <Check size={12} /> : <Copy size={12} />}
-                  {copiedAction ? "Copied!" : "📋 Copy Slack Dispatch"}
+                  {copiedAction ? "Copied!" : "Copy Dispatch"}
                 </button>
               </div>
 
               {/* Blast Radius Card */}
-              <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "12px 14px" }}>
+              <div style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "12px 14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                  <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Flame size={14} color="#ef4444" />
+                  <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#f5f5f4", display: "flex", alignItems: "center", gap: "6px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                    <Flame size={13} color="#ef4444" />
                     Multi-Hop Blast Radius (FalkorDB Cypher Traversal)
                   </div>
-                  <span style={{ fontSize: "10.5px", color: "#94a3b8" }}>Traversal: Cypher Multi-Hop</span>
+                  <span style={{ fontSize: "10px", color: "#78716c", letterSpacing: "0.08em", textTransform: "uppercase" }}>Cypher Traversal</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11.5px" }}>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px" }}>
-                    <div style={{ color: "#94a3b8", fontSize: "10px", textTransform: "uppercase", marginBottom: "4px" }}>Downstream At-Risk (Impact)</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#78716c", fontSize: "9.5px", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "4px" }}>Downstream At-Risk</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                      <span style={{ background: "rgba(239, 68, 68, 0.25)", color: "#fca5a5", padding: "2px 6px", borderRadius: "4px", fontWeight: 600 }}>checkout-web (P0)</span>
-                      <span style={{ background: "rgba(245, 158, 11, 0.25)", color: "#fcd34d", padding: "2px 6px", borderRadius: "4px", fontWeight: 600 }}>billing-svc (P1)</span>
+                      <span style={{ background: "rgba(239, 68, 68, 0.2)", color: "#fca5a5", padding: "2px 6px", borderRadius: "4px", fontWeight: 600 }}>checkout-web (P0)</span>
+                      <span style={{ background: "rgba(224, 163, 92, 0.2)", color: "#fcd34d", padding: "2px 6px", borderRadius: "4px", fontWeight: 600 }}>billing-svc (P1)</span>
                     </div>
                   </div>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px" }}>
-                    <div style={{ color: "#94a3b8", fontSize: "10px", textTransform: "uppercase", marginBottom: "4px" }}>Upstream Dependencies</div>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#78716c", fontSize: "9.5px", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "4px" }}>Upstream Dependencies</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                      <span style={{ background: "#090d16", color: "#38bdf8", padding: "2px 6px", borderRadius: "4px" }}>identity-svc (gRPC)</span>
-                      <span style={{ background: "#090d16", color: "#38bdf8", padding: "2px 6px", borderRadius: "4px" }}>ledger-svc (gRPC)</span>
+                      <span style={{ background: "#080706", color: "#e0a35c", border: "1px solid #242220", padding: "2px 6px", borderRadius: "4px" }}>identity-svc (gRPC)</span>
+                      <span style={{ background: "#080706", color: "#e0a35c", border: "1px solid #242220", padding: "2px 6px", borderRadius: "4px" }}>ledger-svc (gRPC)</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Historical Precedent Match Card */}
-              <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "12px 14px" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                  <ShieldAlert size={14} color="#f59e0b" />
+              <div style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "12px 14px" }}>
+                <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#f5f5f4", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <ShieldAlert size={13} color="#e0a35c" />
                   Matched Historical Precedent: INC-8812 (94% Pattern Similarity)
                 </div>
-                <div style={{ fontSize: "11.5px", color: "#cbd5e1", lineHeight: 1.5 }}>
-                  <strong>Root Cause from Post-Mortem:</strong> Authentication key rotation failure caused symmetric HMAC signature mismatches. Prompted creation of ADR-042.
+                <div style={{ fontSize: "11px", color: "#a8a29e", lineHeight: 1.5 }}>
+                  <strong>Root Cause:</strong> Key rotation failure caused symmetric HMAC signature mismatches. Prompted creation of ADR-042.
                 </div>
                 <div style={{ marginTop: "8px" }}>
                   <button
                     onClick={() => onOpenEvidence("synthetic_data/DOC-INC-8812.md")}
-                    style={{ background: "#1e293b", color: "#f87171", padding: "4px 10px", borderRadius: "4px", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer", border: "1px solid #334155" }}
+                    style={{ background: "#141210", color: "#f87171", padding: "4px 10px", borderRadius: "20px", fontSize: "10.5px", letterSpacing: "0.06em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer", border: "1px solid #242220" }}
                   >
-                    <BookOpen size={12} /> View Post-Mortem INC-8812
+                    <BookOpen size={11} /> View Post-Mortem INC-8812
                   </button>
                 </div>
               </div>
 
               {/* Mobilized On-Call Squad Card */}
-              <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "12px 14px" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                  <Users size={14} color="#38bdf8" />
+              <div style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "12px 14px" }}>
+                <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#f5f5f4", display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <Users size={13} color="#e0a35c" />
                   Automated On-Call Squad Dispatched (FalkorDB Expert Graph)
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11.5px" }}>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px" }}>
-                    <div style={{ color: "#38bdf8", fontWeight: 600 }}>Elena Rostova</div>
-                    <div style={{ color: "#94a3b8", fontSize: "10.5px" }}>Incident Commander (Lead on INC-8812)</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#e0a35c", fontWeight: 600 }}>Elena Rostova</div>
+                    <div style={{ color: "#78716c", fontSize: "10px" }}>Incident Commander (Lead on INC-8812)</div>
                   </div>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px" }}>
-                    <div style={{ color: "#38bdf8", fontWeight: 600 }}>Sarah Jenkins</div>
-                    <div style={{ color: "#94a3b8", fontSize: "10.5px" }}>Payments Domain SME (Score: 0.82)</div>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#e0a35c", fontWeight: 600 }}>Sarah Jenkins</div>
+                    <div style={{ color: "#78716c", fontSize: "10px" }}>Payments Domain SME (Score: 0.82)</div>
                   </div>
                 </div>
               </div>
@@ -394,8 +794,8 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
               {/* Alert Banner */}
               <div
                 style={{
-                  background: "rgba(124, 58, 237, 0.12)",
-                  border: "1px solid #a855f7",
+                  background: "rgba(217, 119, 6, 0.12)",
+                  border: "1px solid #d97706",
                   borderRadius: "8px",
                   padding: "12px 14px",
                   display: "flex",
@@ -406,25 +806,27 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 10px #ef4444" }}></div>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#d97706", boxShadow: "0 0 8px #d97706" }}></div>
                   <div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#f87171" }}>
-                      ❌ MERGE BLOCKED: Architectural Drift in PR #318
+                    <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#f5d59f", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                      ❌ Merge Blocked: Architectural Drift in PR #318
                     </div>
-                    <div style={{ fontSize: "11px", color: "#cbd5e1" }}>
-                      Target: <strong style={{ color: "#f8fafc" }}>payments-svc</strong> • Governance Policy: <strong style={{ color: "#c084fc" }}>SEC-POL-001 / ADR-042</strong>
+                    <div style={{ fontSize: "10.5px", color: "#a8a29e", marginTop: "2px" }}>
+                      Target: <strong style={{ color: "#f5f5f4" }}>payments-svc</strong> • Governance Policy: <strong style={{ color: "#e0a35c" }}>SEC-POL-001 / ADR-042</strong>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => copyToClipboard(investigation.answer)}
                   style={{
-                    background: "#7c3aed",
-                    color: "#ffffff",
-                    padding: "6px 12px",
-                    borderRadius: "5px",
-                    fontSize: "11.5px",
+                    background: "#d97706",
+                    color: "#000000",
+                    padding: "5px 12px",
+                    borderRadius: "20px",
+                    fontSize: "11px",
                     fontWeight: 600,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
                     display: "flex",
                     alignItems: "center",
                     gap: "5px",
@@ -433,37 +835,37 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                   }}
                 >
                   {copiedAction ? <Check size={12} /> : <Copy size={12} />}
-                  {copiedAction ? "Copied!" : "📋 Copy GitHub Review"}
+                  {copiedAction ? "Copied!" : "Copy Review"}
                 </button>
               </div>
 
               {/* Violated Standard Card */}
-              <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "12px 14px" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                  <Scale size={14} color="#a855f7" />
+              <div style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "12px 14px" }}>
+                <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#f5f5f4", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <Scale size={13} color="#e0a35c" />
                   Mandated Architecture Standard: ADR-042
                 </div>
-                <div style={{ fontSize: "11.5px", color: "#cbd5e1", lineHeight: 1.5 }}>
-                  <strong>ADR-042: Mandate AUTH-V2 Asymmetric Tokens</strong> (Approved by Alex Chen on 2026-09-15 following outage INC-8812). Banned symmetric HMAC keys across all Tier-1 payments and checkout services.
+                <div style={{ fontSize: "11px", color: "#a8a29e", lineHeight: 1.5 }}>
+                  <strong>ADR-042: Mandate AUTH-V2 Asymmetric Tokens</strong> (Approved by Alex Chen following outage INC-8812). Banned symmetric HMAC keys across all Tier-1 services.
                 </div>
                 <div style={{ marginTop: "8px" }}>
                   <button
                     onClick={() => onOpenEvidence("synthetic_data/DOC-DEC-042.md")}
-                    style={{ background: "#1e293b", color: "#a78bfa", padding: "4px 10px", borderRadius: "4px", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer", border: "1px solid #334155" }}
+                    style={{ background: "#141210", color: "#e0a35c", padding: "4px 10px", borderRadius: "20px", fontSize: "10.5px", letterSpacing: "0.06em", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: "4px", cursor: "pointer", border: "1px solid #242220" }}
                   >
-                    <BookOpen size={12} /> View Full ADR-042 Record
+                    <BookOpen size={11} /> View ADR-042 Record
                   </button>
                 </div>
               </div>
 
               {/* Drift Risk Analysis */}
-              <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "12px 14px" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                  <AlertTriangle size={14} color="#f59e0b" />
+              <div style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "12px 14px" }}>
+                <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#f5f5f4", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <AlertTriangle size={13} color="#e0a35c" />
                   Regression Risk Analysis
                 </div>
-                <div style={{ fontSize: "11.5px", color: "#cbd5e1", lineHeight: 1.5 }}>
-                  PR #318 attempts to revert authentication to symmetric HMAC keys. This revives the exact vulnerability that caused historical P0 outage <strong>INC-8812</strong> and introduces token desync across <strong>checkout-web</strong>.
+                <div style={{ fontSize: "11px", color: "#a8a29e", lineHeight: 1.5 }}>
+                  PR #318 attempts to revert authentication to symmetric HMAC keys. This revives the exact vulnerability that caused historical P0 outage <strong>INC-8812</strong>.
                 </div>
               </div>
             </div>
@@ -475,8 +877,8 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
               {/* Header */}
               <div
                 style={{
-                  background: "rgba(6, 182, 212, 0.1)",
-                  border: "1px solid #0891b2",
+                  background: "rgba(217, 119, 6, 0.08)",
+                  border: "1px solid #d97706",
                   borderRadius: "8px",
                   padding: "12px 14px",
                   display: "flex",
@@ -487,22 +889,24 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                 }}
               >
                 <div>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#22d3ee" }}>
-                    🌐 INSTITUTIONAL MEMORY & OWNERSHIP GRAPH
+                  <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#f5d59f", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    Institutional Memory & Ownership Graph
                   </div>
-                  <div style={{ fontSize: "11px", color: "#94a3b8" }}>
-                    Target: <strong style={{ color: "#f8fafc" }}>Payments Service (Tier 1 / P0)</strong> • Powered by FalkorDB
+                  <div style={{ fontSize: "10.5px", color: "#a8a29e", marginTop: "2px" }}>
+                    Target: <strong style={{ color: "#f5f5f4" }}>Payments Service (Tier 1 / P0)</strong> • FalkorDB Native
                   </div>
                 </div>
                 <button
                   onClick={() => copyToClipboard(investigation.answer)}
                   style={{
-                    background: "#0891b2",
-                    color: "#ffffff",
-                    padding: "6px 12px",
-                    borderRadius: "5px",
-                    fontSize: "11.5px",
+                    background: "#d97706",
+                    color: "#000000",
+                    padding: "5px 12px",
+                    borderRadius: "20px",
+                    fontSize: "11px",
                     fontWeight: 600,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
                     display: "flex",
                     alignItems: "center",
                     gap: "5px",
@@ -511,61 +915,130 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                   }}
                 >
                   {copiedAction ? <Check size={12} /> : <Copy size={12} />}
-                  {copiedAction ? "Copied!" : "📋 Copy Report"}
+                  {copiedAction ? "Copied!" : "Copy Report"}
                 </button>
               </div>
 
               {/* Service Ownership */}
-              <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "12px 14px" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", marginBottom: "8px" }}>
+              <div style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "12px 14px" }}>
+                <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#f5f5f4", marginBottom: "8px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                   Service Ownership & Governance
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11.5px" }}>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px" }}>
-                    <div style={{ color: "#94a3b8", fontSize: "10px" }}>Owning Team</div>
-                    <div style={{ color: "#38bdf8", fontWeight: 600 }}>Platform Core Team</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px" }}>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#78716c", fontSize: "9.5px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Owning Team</div>
+                    <div style={{ color: "#e0a35c", fontWeight: 600, marginTop: "2px" }}>Platform Core Team</div>
                   </div>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px" }}>
-                    <div style={{ color: "#94a3b8", fontSize: "10px" }}>Technical Lead</div>
-                    <div style={{ color: "#38bdf8", fontWeight: 600 }}>Alex Chen (VP Eng)</div>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#78716c", fontSize: "9.5px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Technical Lead</div>
+                    <div style={{ color: "#e0a35c", fontWeight: 600, marginTop: "2px" }}>Alex Chen (VP Eng)</div>
                   </div>
                 </div>
               </div>
 
               {/* Domain Experts */}
-              <div style={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: "8px", padding: "12px 14px" }}>
-                <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Users size={14} color="#818cf8" />
+              <div style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "12px 14px" }}>
+                <div style={{ fontSize: "11.5px", fontWeight: 700, color: "#f5f5f4", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <Users size={13} color="#e0a35c" />
                   Graph-Ranked Domain Experts (Degree Weighted)
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px", fontSize: "11.5px" }}>
-                    <div style={{ color: "#f8fafc", fontWeight: 600 }}>Alex Chen</div>
-                    <div style={{ color: "#94a3b8", fontSize: "10px" }}>VP Eng • Approver of ADR-042</div>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", fontSize: "11px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#f5f5f4", fontWeight: 600 }}>Alex Chen</div>
+                    <div style={{ color: "#78716c", fontSize: "10px" }}>VP Eng • Approver of ADR-042</div>
                   </div>
-                  <div style={{ background: "#1e293b", padding: "8px 10px", borderRadius: "6px", fontSize: "11.5px" }}>
-                    <div style={{ color: "#f8fafc", fontWeight: 600 }}>Elena Rostova</div>
-                    <div style={{ color: "#94a3b8", fontSize: "10px" }}>SRE Lead • Incident Commander INC-8812</div>
+                  <div style={{ background: "#141210", padding: "8px 10px", borderRadius: "6px", fontSize: "11px", border: "1px solid #242220" }}>
+                    <div style={{ color: "#f5f5f4", fontWeight: 600 }}>Elena Rostova</div>
+                    <div style={{ color: "#78716c", fontSize: "10px" }}>SRE Lead • Incident Commander INC-8812</div>
                   </div>
                 </div>
               </div>
             </div>
           )}
+        </div>
+      )}
+    </div>
 
-          {/* Collapsible Full Text Analysis */}
-          <details style={{ background: "#090d16", border: "1px solid #1e293b", borderRadius: "6px", padding: "8px 12px" }}>
-            <summary style={{ cursor: "pointer", fontSize: "11px", fontWeight: 600, color: "#94a3b8" }}>
+    {/* ============================================================== */}
+    {/* CONTAINER 3: AUDIT TRAIL, PROVENANCE & CYPHER TOOLS (SEPARATE) */}
+    {/* ============================================================== */}
+    {investigation && (
+      <div
+        style={{
+          background: "#0c0a09",
+          border: "1px solid #242220",
+          borderRadius: "16px",
+          padding: "24px 28px",
+          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.8)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
+        {/* Container 3 Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "1px solid #1f1d1b",
+            paddingBottom: "14px",
+            flexWrap: "wrap",
+            gap: "10px",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "10px",
+                letterSpacing: "0.18em",
+                color: "#e0a35c",
+                textTransform: "uppercase",
+                fontWeight: 700,
+              }}
+            >
+              STEP 3: AUDIT TRAIL, PROVENANCE & CYPHER TOOLS
+            </div>
+            <h3
+              style={{
+                fontSize: "16px",
+                fontWeight: 600,
+                color: "#ffffff",
+                margin: "3px 0 0 0",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Enterprise Verification & Evidence Records
+            </h3>
+          </div>
+          <span
+            style={{
+              fontSize: "10px",
+              color: "#34d399",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+            }}
+          >
+            100% Cryptographic Provenance ✓
+          </span>
+        </div>
+
+        {/* Collapsible Full Text Analysis */}
+        <details style={{ background: "#0c0a09", border: "1px solid #242220", borderRadius: "8px", padding: "10px 14px" }}>
+          <summary style={{ cursor: "pointer", fontSize: "11px", fontWeight: 600, color: "#a8a29e", letterSpacing: "0.04em", textTransform: "uppercase" }}>
               📄 View Full Cypher Traversal Report Text
             </summary>
             <div
               style={{
-                marginTop: "8px",
-                padding: "8px",
-                background: "#050811",
-                borderRadius: "4px",
-                fontSize: "11.5px",
+                marginTop: "10px",
+                padding: "10px",
+                background: "#080706",
+                borderRadius: "6px",
+                border: "1px solid #242220",
+                fontSize: "11px",
                 lineHeight: 1.6,
-                color: "#cbd5e1",
+                color: "#d6d3d1",
                 whiteSpace: "pre-wrap",
                 maxHeight: "220px",
                 overflowY: "auto"
@@ -576,34 +1049,31 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
           </details>
 
           {/* Source Document Provenance Drawer Links */}
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center", background: "#0b1222", padding: "8px 12px", borderRadius: "6px", border: "1px solid #1e293b" }}>
-            <span style={{ fontSize: "11px", color: "#64748b" }}>Auditable Docs:</span>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", background: "#0c0a09", padding: "10px 14px", borderRadius: "8px", border: "1px solid #242220" }}>
+            <span style={{ fontSize: "10.5px", color: "#78716c", letterSpacing: "0.08em", textTransform: "uppercase" }}>Auditable Docs:</span>
             <button
               onClick={() => onOpenEvidence("synthetic_data/DOC-RFC-102.md")}
-              style={{ background: "#1e293b", color: "#38bdf8", padding: "3px 8px", borderRadius: "4px", fontSize: "11px", border: "1px solid #334155", cursor: "pointer" }}
+              style={{ background: "#141210", color: "#e0a35c", padding: "4px 10px", borderRadius: "20px", fontSize: "10.5px", letterSpacing: "0.06em", border: "1px solid #242220", cursor: "pointer" }}
             >
-              📄 RFC-102 (Payments Arch)
+              RFC-102 (Payments Arch)
             </button>
             <button
               onClick={() => onOpenEvidence("synthetic_data/DOC-DEC-042.md")}
-              style={{ background: "#1e293b", color: "#a78bfa", padding: "3px 8px", borderRadius: "4px", fontSize: "11px", border: "1px solid #334155", cursor: "pointer" }}
+              style={{ background: "#141210", color: "#f5d59f", padding: "4px 10px", borderRadius: "20px", fontSize: "10.5px", letterSpacing: "0.06em", border: "1px solid #242220", cursor: "pointer" }}
             >
-              ⚖️ ADR-042 (Auth-V2 Mandate)
+              ADR-042 (Auth-V2 Mandate)
             </button>
             <button
               onClick={() => onOpenEvidence("synthetic_data/DOC-INC-8812.md")}
-              style={{ background: "#1e293b", color: "#f87171", padding: "3px 8px", borderRadius: "4px", fontSize: "11px", border: "1px solid #334155", cursor: "pointer" }}
+              style={{ background: "#141210", color: "#f87171", padding: "4px 10px", borderRadius: "20px", fontSize: "10.5px", letterSpacing: "0.06em", border: "1px solid #242220", cursor: "pointer" }}
             >
-              🚨 Post-Mortem INC-8812
+              Post-Mortem INC-8812
             </button>
           </div>
-        </div>
-      )}
 
-      {/* SECTION 5: TRANSPARENT GRAPH TOOLS LOG */}
-      {investigation && (
-        <div style={{ marginTop: "4px" }}>
-          <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", marginBottom: "6px" }}>
+          {/* SECTION 5: TRANSPARENT GRAPH TOOLS LOG */}
+          <div style={{ marginTop: "4px" }}>
+            <div style={{ fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em", color: "#78716c", marginBottom: "6px" }}>
             Verifiable Graph Tools Executed ({investigation.tool_traces.length})
           </div>
 
@@ -614,9 +1084,9 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                 <div
                   key={idx}
                   style={{
-                    background: "#090d16",
-                    border: "1px solid #1e293b",
-                    borderRadius: "5px",
+                    background: "#0c0a09",
+                    border: "1px solid #242220",
+                    borderRadius: "6px",
                     overflow: "hidden"
                   }}
                 >
@@ -626,25 +1096,25 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      padding: "6px 10px",
+                      padding: "8px 12px",
                       cursor: "pointer",
                       fontSize: "11px",
-                      color: "#94a3b8"
+                      color: "#a8a29e"
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span style={{ color: "#06b6d4", fontFamily: "monospace" }}>{trace.tool}()</span>
+                      <span style={{ color: "#e0a35c", fontFamily: "monospace" }}>{trace.tool}()</span>
                       <span>—</span>
-                      <span style={{ color: "#cbd5e1" }}>{trace.explanation}</span>
+                      <span style={{ color: "#d6d3d1" }}>{trace.explanation}</span>
                     </div>
                     {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   </div>
 
                   {isOpen && (
-                    <div style={{ padding: "8px 12px", background: "#050811", borderTop: "1px solid #1e293b", fontSize: "11px", fontFamily: "monospace" }}>
-                      <div style={{ color: "#64748b", marginBottom: "2px" }}>Input:</div>
-                      <pre style={{ color: "#38bdf8", marginBottom: "6px" }}>{JSON.stringify(trace.input, null, 2)}</pre>
-                      <div style={{ color: "#64748b", marginBottom: "2px" }}>Output:</div>
+                    <div style={{ padding: "8px 12px", background: "#080706", borderTop: "1px solid #242220", fontSize: "11px", fontFamily: "monospace" }}>
+                      <div style={{ color: "#78716c", marginBottom: "2px" }}>Input:</div>
+                      <pre style={{ color: "#e0a35c", marginBottom: "6px" }}>{JSON.stringify(trace.input, null, 2)}</pre>
+                      <div style={{ color: "#78716c", marginBottom: "2px" }}>Output:</div>
                       <pre style={{ color: "#34d399", maxHeight: "120px", overflowY: "auto" }}>{JSON.stringify(trace.output, null, 2)}</pre>
                     </div>
                   )}
@@ -653,8 +1123,12 @@ export const InvestigationPanel: React.FC<InvestigationPanelProps> = ({
             })}
           </div>
         </div>
-      )}
 
-    </div>
+        {/* End of Container 3 */}
+      </div>
+    )}
+
+    {/* End of Outer Flex Wrapper */}
+  </div>
   );
 };

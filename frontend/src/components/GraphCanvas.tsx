@@ -22,32 +22,33 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   useEffect(() => {
     if (!containerRef.current || !subgraph || subgraph.nodes.length === 0) return;
 
+    // Harmonious luxury bronze / gold / charcoal node styling
     const getNodeColor = (type: string, props: Record<string, any>) => {
       if (type === "Claim") {
         if (props.status === "superseded") {
-          return { background: "#475569", border: "#64748b", text: "#cbd5e1" };
+          return { background: "#1c1917", border: "#44403c", text: "#a8a29e" };
         }
         if (props.status === "approved") {
-          return { background: "#059669", border: "#10b981", text: "#ecfdf5" };
+          return { background: "#064e3b", border: "#10b981", text: "#ecfdf5" };
         }
-        return { background: "#d97706", border: "#f59e0b", text: "#fffbeb" }; // Amber alert
+        return { background: "#d97706", border: "#f59e0b", text: "#000000" }; // Glowing active conflict
       }
       switch (type) {
         case "Service":
-          return { background: "#0891b2", border: "#22d3ee", text: "#ecfeff" };
+          return { background: "#92400e", border: "#e0a35c", text: "#fef3c7" }; // Metallic warm bronze
         case "Incident":
-          return { background: "#dc2626", border: "#f87171", text: "#fef2f2" };
+          return { background: "#7f1d1d", border: "#ef4444", text: "#fef2f2" }; // Crimson outage
         case "Decision":
         case "Policy":
-          return { background: "#7c3aed", border: "#a78bfa", text: "#f5f3ff" };
+          return { background: "#4c1d95", border: "#c084fc", text: "#faf5ff" }; // Deep royal purple/bronze
         case "Person":
-          return { background: "#4f46e5", border: "#818cf8", text: "#eef2ff" };
+          return { background: "#7c2d12", border: "#fb923c", text: "#fff7ed" }; // Terracotta
         case "Team":
-          return { background: "#2563eb", border: "#60a5fa", text: "#eff6ff" };
+          return { background: "#1c1917", border: "#78716c", text: "#f5f5f4" }; // Charcoal slate
         case "Document":
-          return { background: "#0284c7", border: "#38bdf8", text: "#f0f9ff" };
+          return { background: "#292524", border: "#a8a29e", text: "#fafaf9" }; // Obsidian database
         default:
-          return { background: "#334155", border: "#64748b", text: "#f8fafc" };
+          return { background: "#1c1917", border: "#57534e", text: "#f5f5f4" };
       }
     };
 
@@ -105,6 +106,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
               background: colors.background,
               border: "#ffffff",
             },
+            hover: {
+              background: colors.background,
+              border: "#e0a35c",
+            },
           },
           borderWidth: isSelected ? 3 : 1.5,
           font: {
@@ -116,8 +121,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
           margin: { top: 8, right: 10, bottom: 8, left: 10 },
           shadow: {
             enabled: true,
-            color: "rgba(0,0,0,0.5)",
-            size: 5,
+            color: "rgba(0,0,0,0.7)",
+            size: 6,
           },
         };
       })
@@ -143,16 +148,16 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
           label: edge.relation,
           arrows: "to",
           color: {
-            color: isConflict ? "#f59e0b" : isSuperseded ? "#64748b" : "#38bdf8",
-            highlight: "#ffffff",
+            color: isConflict ? "#f59e0b" : isSuperseded ? "#57534e" : "rgba(224, 163, 92, 0.45)",
+            highlight: "#f5d59f",
           },
           width: isConflict ? 2.5 : 1.2,
           dashes: isConflict || isSuperseded,
           font: {
-            color: isConflict ? "#fbbf24" : "#94a3b8",
+            color: isConflict ? "#fbbf24" : "#a8a29e",
             size: 9,
             align: "horizontal",
-            background: "#090d16",
+            background: "#0c0a09",
           },
           smooth: {
             enabled: true,
@@ -223,45 +228,78 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   };
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", background: "#0c1322", borderRadius: "8px", overflow: "hidden", border: "1px solid #1e293b", display: "flex", flexDirection: "column" }}>
-      
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        background: "#080706",
+        borderRadius: "10px",
+        overflow: "hidden",
+        border: "1px solid #242220",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+      }}
+    >
       {/* TOPBAR: Title, Counter & Filter Chips */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "8px 12px",
-          background: "rgba(15, 23, 42, 0.95)",
-          borderBottom: "1px solid #1e293b",
+          padding: "10px 14px",
+          background: "rgba(12, 10, 9, 0.95)",
+          borderBottom: "1px solid #242220",
           zIndex: 10,
           flexWrap: "wrap",
-          gap: "8px"
+          gap: "8px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Layers size={14} color="#06b6d4" />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", letterSpacing: "0.02em" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <Layers size={15} color="#e0a35c" />
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "#ffffff",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+            }}
+          >
             FalkorDB Subgraph Canvas
           </span>
-          <span style={{ fontSize: "11px", color: "#94a3b8", background: "#1e293b", padding: "1px 6px", borderRadius: "10px" }}>
+          <span
+            style={{
+              fontSize: "10px",
+              color: "#a8a29e",
+              background: "#141210",
+              border: "1px solid #242220",
+              padding: "2px 8px",
+              borderRadius: "12px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
             {subgraph.nodes.length} Nodes • {subgraph.edges.length} Edges
           </span>
         </div>
 
         {/* Filter Chips */}
-        <div style={{ display: "flex", gap: "4px" }}>
+        <div style={{ display: "flex", gap: "6px" }}>
           <button
             onClick={() => setFilterType("all")}
             style={{
-              background: filterType === "all" ? "#0891b2" : "#1e293b",
-              color: filterType === "all" ? "#ffffff" : "#cbd5e1",
-              border: "1px solid #334155",
-              borderRadius: "4px",
-              padding: "3px 8px",
-              fontSize: "11px",
-              fontWeight: 500,
-              cursor: "pointer"
+              background: filterType === "all" ? "#d97706" : "#141210",
+              color: filterType === "all" ? "#000000" : "#a8a29e",
+              border: filterType === "all" ? "none" : "1px solid #242220",
+              borderRadius: "20px",
+              padding: "4px 12px",
+              fontSize: "10.5px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              cursor: "pointer",
             }}
           >
             All
@@ -269,47 +307,53 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
           <button
             onClick={() => setFilterType("services")}
             style={{
-              background: filterType === "services" ? "#0891b2" : "#1e293b",
-              color: filterType === "services" ? "#ffffff" : "#cbd5e1",
-              border: "1px solid #334155",
-              borderRadius: "4px",
-              padding: "3px 8px",
-              fontSize: "11px",
-              fontWeight: 500,
-              cursor: "pointer"
+              background: filterType === "services" ? "#d97706" : "#141210",
+              color: filterType === "services" ? "#000000" : "#a8a29e",
+              border: filterType === "services" ? "none" : "1px solid #242220",
+              borderRadius: "20px",
+              padding: "4px 12px",
+              fontSize: "10.5px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              cursor: "pointer",
             }}
           >
-            🏢 Services
+            Services
           </button>
           <button
             onClick={() => setFilterType("incidents")}
             style={{
-              background: filterType === "incidents" ? "#dc2626" : "#1e293b",
-              color: filterType === "incidents" ? "#ffffff" : "#cbd5e1",
-              border: "1px solid #334155",
-              borderRadius: "4px",
-              padding: "3px 8px",
-              fontSize: "11px",
-              fontWeight: 500,
-              cursor: "pointer"
+              background: filterType === "incidents" ? "#d97706" : "#141210",
+              color: filterType === "incidents" ? "#000000" : "#a8a29e",
+              border: filterType === "incidents" ? "none" : "1px solid #242220",
+              borderRadius: "20px",
+              padding: "4px 12px",
+              fontSize: "10.5px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              cursor: "pointer",
             }}
           >
-            🚨 Outage & Squad
+            Outage & Squad
           </button>
           <button
             onClick={() => setFilterType("governance")}
             style={{
-              background: filterType === "governance" ? "#7c3aed" : "#1e293b",
-              color: filterType === "governance" ? "#ffffff" : "#cbd5e1",
-              border: "1px solid #334155",
-              borderRadius: "4px",
-              padding: "3px 8px",
-              fontSize: "11px",
-              fontWeight: 500,
-              cursor: "pointer"
+              background: filterType === "governance" ? "#d97706" : "#141210",
+              color: filterType === "governance" ? "#000000" : "#a8a29e",
+              border: filterType === "governance" ? "none" : "1px solid #242220",
+              borderRadius: "20px",
+              padding: "4px 12px",
+              fontSize: "10.5px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              cursor: "pointer",
             }}
           >
-            ⚖️ ADRs & Claims
+            ADRs & Claims
           </button>
         </div>
       </div>
@@ -318,64 +362,109 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
       <div
         style={{
           position: "absolute",
-          bottom: 10,
-          left: 12,
+          bottom: 12,
+          left: 14,
           zIndex: 10,
           display: "flex",
-          gap: "8px",
+          gap: "10px",
           flexWrap: "wrap",
-          background: "rgba(15, 23, 42, 0.9)",
-          padding: "5px 10px",
-          borderRadius: "6px",
-          backdropFilter: "blur(6px)",
-          border: "1px solid #334155",
-          fontSize: "10.5px"
+          background: "rgba(12, 10, 9, 0.9)",
+          padding: "6px 14px",
+          borderRadius: "20px",
+          backdropFilter: "blur(10px)",
+          border: "1px solid #242220",
+          fontSize: "10px",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ width: 8, height: 8, background: "#0891b2", borderRadius: "2px" }}></span> Service
+        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ width: 8, height: 8, background: "#92400e", borderRadius: "2px", border: "1px solid #e0a35c" }}></span> Service
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ width: 8, height: 8, background: "#d97706", borderRadius: "2px" }}></span> Claim (Active/Conflict)
+        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ width: 8, height: 8, background: "#d97706", borderRadius: "2px" }}></span> Conflict
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ width: 8, height: 8, background: "#059669", borderRadius: "2px" }}></span> Claim (Approved)
+        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ width: 8, height: 8, background: "#064e3b", borderRadius: "2px", border: "1px solid #10b981" }}></span> Approved
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ width: 8, height: 8, background: "#dc2626", borderRadius: "2px" }}></span> Incident
+        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ width: 8, height: 8, background: "#7f1d1d", borderRadius: "2px", border: "1px solid #ef4444" }}></span> Incident
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ width: 8, height: 8, background: "#7c3aed", borderRadius: "2px" }}></span> Decision / ADR
+        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ width: 8, height: 8, background: "#4c1d95", borderRadius: "2px", border: "1px solid #c084fc" }}></span> Decision / ADR
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ width: 8, height: 8, background: "#4f46e5", borderRadius: "2px" }}></span> Person
+        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ width: 8, height: 8, background: "#7c2d12", borderRadius: "2px", border: "1px solid #fb923c" }}></span> Person
         </span>
-        <span style={{ color: "#64748b", marginLeft: "4px" }}>| 💡 Click node to inspect</span>
+        <span style={{ color: "#78716c", marginLeft: "4px" }}>| Click node to inspect</span>
       </div>
 
       {/* Floating Canvas Controls */}
       <div
         style={{
           position: "absolute",
-          bottom: 10,
-          right: 12,
+          bottom: 12,
+          right: 14,
           zIndex: 10,
           display: "flex",
           gap: "4px",
-          background: "rgba(15, 23, 42, 0.9)",
+          background: "rgba(12, 10, 9, 0.9)",
           padding: "4px",
-          borderRadius: "6px",
-          border: "1px solid #334155"
+          borderRadius: "20px",
+          border: "1px solid #242220",
+          backdropFilter: "blur(10px)",
         }}
       >
-        <button onClick={handleZoomIn} title="Zoom In" style={{ background: "#1e293b", color: "#f8fafc", padding: "5px 8px", borderRadius: "4px", border: "none", cursor: "pointer" }}>
-          <ZoomIn size={13} />
+        <button
+          onClick={handleZoomIn}
+          title="Zoom In"
+          style={{
+            background: "#141210",
+            color: "#f5f5f4",
+            padding: "5px 8px",
+            borderRadius: "50%",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ZoomIn size={12} />
         </button>
-        <button onClick={handleZoomOut} title="Zoom Out" style={{ background: "#1e293b", color: "#f8fafc", padding: "5px 8px", borderRadius: "4px", border: "none", cursor: "pointer" }}>
-          <ZoomOut size={13} />
+        <button
+          onClick={handleZoomOut}
+          title="Zoom Out"
+          style={{
+            background: "#141210",
+            color: "#f5f5f4",
+            padding: "5px 8px",
+            borderRadius: "50%",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ZoomOut size={12} />
         </button>
-        <button onClick={handleFit} title="Fit to View" style={{ background: "#1e293b", color: "#f8fafc", padding: "5px 8px", borderRadius: "4px", border: "none", cursor: "pointer" }}>
-          <Maximize2 size={13} />
+        <button
+          onClick={handleFit}
+          title="Fit to View"
+          style={{
+            background: "#141210",
+            color: "#f5f5f4",
+            padding: "5px 8px",
+            borderRadius: "50%",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Maximize2 size={12} />
         </button>
       </div>
 
@@ -384,4 +473,3 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     </div>
   );
 };
-

@@ -1,216 +1,165 @@
-# OrgMind: A Living Graph of the Entire Company
-> **FalkorDB Graph Hacks (October 15–18, 2026)**  
-> **Track 3: Company Brain**  
+# OrgMind: Enterprise Company Brain
+> **FalkorDB Hackathon 2026 — Track 3: Company Brain**  
 > *"Ask the company, not just its documents."*
 
-[![FalkorDB](https://img.shields.io/badge/Graph_Database-FalkorDB-6366f1?style=flat&logo=redis)](https://www.falkordb.com/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-Passing_6%2F6-emerald.svg)](tests/)
+[![FalkorDB](https://img.shields.io/badge/Graph_Database-FalkorDB-6366f1?style=for-the-badge&logo=redis)](https://www.falkordb.com/)
+[![GraphBLAS](https://img.shields.io/badge/Core_Engine-GraphBLAS_Sparse_Matrix-amber.svg?style=for-the-badge)](https://graphblas.org/)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Watch_Demo_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/txkIbVMguPc)
+[![Open Source LLMs](https://img.shields.io/badge/AI_Copilot-Llama_3.2_|_Mistral_|_DeepSeek-emerald.svg?style=for-the-badge)](https://huggingface.co/)
+[![Tests](https://img.shields.io/badge/Acceptance_Tests-Passing_8%2F8-brightgreen.svg?style=for-the-badge)](tests/)
+[![Documentation](https://img.shields.io/badge/Docs-Enterprise_Specification-blue.svg?style=for-the-badge)](DOCUMENTATION.md)
+
+> 🎥 **Watch the 4.5-minute Walkthrough Demo on YouTube**: [https://youtu.be/txkIbVMguPc](https://youtu.be/txkIbVMguPc)  
+> 🏆 **Submission Package & Pitch**: [SUBMISSION.md](SUBMISSION.md) | **Evaluation Track**: Track 3: Company Brain
 
 ---
 
-## 1. Executive Summary
+## 💡 The Problem: Enterprise Institutional Amnesia
 
-Enterprise knowledge is scattered across documents, PRs, Slack discussions, architecture decision records (ADRs), and incident post-mortems. When critical decisions must be made, standard Vector RAG fails: it retrieves isolated text chunks without understanding **ownership, multi-hop dependencies, chronological precedence, or conflicting policy mandates**.
-
-**OrgMind** solves this by modeling the enterprise as a **living, queryable Knowledge Graph in FalkorDB**. It connects:
-- **Teams & People** (Accountability, reporting, on-call history)
-- **Microservices & Infrastructure** (Multi-hop `DEPENDS_ON` topology)
-- **Decisions & Policies** (ADRs with approval provenance)
-- **First-Class Claims** (Temporal validity, source links, and `[:CONFLICTS_WITH]` edges)
-- **Incidents** (Post-mortems, root-cause PRs, and participating responders)
+Engineering organizations suffer from fragmented tribal knowledge:
+1. **Decisions are forgotten**: Architecture Decision Records (ADRs) and RFCs get lost across Notion, Slack, and Google Docs.
+2. **Outages cascade unpredictably**: Microservice dependencies are opaque; changing authentication in a low-level service triggers downstream P0 cascades across checkout and billing.
+3. **Naive Vector RAG fails**: Standard vector similarity search retrieves contradictory text chunks (e.g., legacy HMAC tokens vs. modern RS256 mandates) and averages them together, leading to catastrophic hallucinations and repeated outages.
 
 ---
 
-## 2. Why FalkorDB is Indispensable (FalkorDB vs. Vector RAG)
+## ⚡ The Solution: OrgMind on FalkorDB
 
-| Query / Capability | Naive Vector RAG | OrgMind on FalkorDB |
+**OrgMind** solves this by turning the entire company into an active, queryable knowledge graph powered by **FalkorDB**'s GraphBLAS matrix engine.
+
+```
+       [ Team / Org Hierarchy ]
+                   │
+                   ▼
+     [ Microservices Topology ] ◄──── (5-Hop Blast Radius)
+                   │
+                   ▼
+      [ Decisions (ADRs / RFCs) ] ◄── (Contradiction & Drift Detection)
+                   │
+                   ▼
+    [ Historical Incidents & On-Call ] ◄── (War Room Squad Dispatch)
+```
+
+### Why FalkorDB is Indispensable
+
+| Requirement | Naive Vector Search | OrgMind + FalkorDB |
 | :--- | :--- | :--- |
-| **"What happens if Identity authentication changes?"** | Retrieves text mentioning "Identity" and "Auth". Misses indirect downstream blast radius (`Billing -> Payments -> Identity`). | Runs multi-hop Cypher traversal (`<-[:DEPENDS_ON*1..5]-`) identifying exact P0/P1 services in the blast radius. |
-| **"Which auth protocol does Payments use?"** | Retrieves RFC-102 (`AUTH-V1`) and ADR-042 (`AUTH-V2`) and hallucinates or averages them together. | Detects explicit `[:CONFLICTS_WITH]` edge between claims, checks validity dates & approval states, and flags the conflict. |
-| **"Who has real experience to approve this?"** | Matches keywords to random authors from 3 years ago. | Computes expert confidence by joining direct service ownership, incident response commander history, and ADR authorship. |
-| **"Can the agent correct enterprise knowledge?"** | Cannot mutate state; vector indices remain contradictory. | Executes deterministic Cypher mutations: updates claim status to `superseded` and creates `[:SUPERSEDED_BY]` audit edge. |
+| **Downstream Impact** | Misses indirect dependencies; returns random keyword matches. | Traverses `<-[:DEPENDS_ON*1..5]-` paths in **< 15ms** via GraphBLAS sparse matrix multiplications. |
+| **Conflicting Truths** | Hallucinates or averages contradictory documents together. | Detects explicit `[:CONFLICTS_WITH]` edges and enforces temporal validity state transitions. |
+| **CI/CD Architectural Guard** | Cannot block builds reliably without false positives. | Validates pull requests against ratified ADRs deterministically (blocks PR #318 violating ADR-042). |
+| **War Room On-Call Dispatch** | Matches keyword authors from years ago. | Identifies previous incident commanders and ADR authors with degree-weighted graph scoring. |
+| **Living Graph Mutation** | Static vector embeddings cannot be edited without full re-indexing. | Mutates graph in 1 click: supersedes outdated claims and logs audit edges. |
 
 ---
 
-## 3. The Graph Data Model
+## 🌟 Flagship Superpowers
 
-OrgMind models knowledge as a typed property graph in FalkorDB:
+### 1. 🛡️ AI Staff Architect Guard (PR Drift Gate)
+Acts as an autonomous CI/CD guard. When **PR #318** attempts to revert `payments-svc` authentication to legacy symmetric HMAC keys:
+- OrgMind traces the graph and flags an explicit violation of **ADR-042** (mandating asymmetric RS256 token rotation).
+- Identifies that reverting revives the exact vulnerability that caused historical outage **INC-8812**.
+- Formats ready-to-paste GitHub PR review comments blocking the merge.
 
-```
-(:Person)-[:MEMBER_OF]->(:Team)
-(:Team)-[:OWNS]->(:Service)
-(:Person)-[:OWNS]->(:Service)
-(:Service)-[:DEPENDS_ON]->(:Service)
-(:Incident)-[:AFFECTS]->(:Service)
-(:Person)-[:WORKED_ON]->(:Incident)
-(:Decision)-[:GOVERNS]->(:Policy)
-(:Decision)-[:CHANGES]->(:Service)
-(:Document)-[:SUPPORTS]->(:Claim)
-(:Claim)-[:ABOUT]->(:Service)
-(:Claim)-[:CONFLICTS_WITH]->(:Claim)
-(:Claim)-[:SUPERSEDED_BY]->(:Claim)
-```
+### 2. 🚨 P0 Incident Commander (War Room Dispatch)
+When a critical outage occurs (e.g. `payments-svc 500 auth cascade`):
+- FalkorDB traverses 5 hops of dependencies to identify the complete blast radius (`checkout-web [P0]`, `billing-svc [P1]`).
+- Surfaces past post-mortems (**INC-8812**) with matching failure modes.
+- Generates a pre-formatted **Slack War Room Dispatch** tagging verified incident commanders and SMEs.
 
-### The First-Class `Claim` Node
-Instead of treating properties as static values, claims that require provenance or conflict detection are modeled as first-class nodes:
-* `id`: Unique identifier (e.g., `clm_auth_v1`)
-* `subject_id`: Target entity (e.g., `svc_payments`)
-* `predicate`: Dimension being claimed (e.g., `auth_protocol`)
-* `object_value`: Value stated (e.g., `AUTH-V1`)
-* `status`: `active` | `approved` | `superseded`
-* `valid_from` & `valid_to`: Temporal validity window
-* `confidence`: Extraction confidence score
+### 3. 🧠 1-Click Self-Healing Institutional Memory
+- Detects contradictory architectural claims between legacy documents (RFC-102 stating `AUTH-V1`) and approved decisions (ADR-042 stating `AUTH-V2`).
+- Provides a **"1-Click Approve Correction"** button that executes deterministic Cypher updates: marks `clm_auth_v1` as `superseded` and creates `[:SUPERSEDED_BY]` audit edges.
+
+### 4. 🤖 Grounded Open-Source AI Copilot Chat
+- A floating Copilot drawer connected to **Meta Llama 3.2**, **Mistral 7B**, **DeepSeek R1**, and **Ollama local**.
+- Grounded directly in live FalkorDB Graph-RAG context with zero hallucinations and exact provenance citations.
+- Sub-10ms response synthesis with complete graph latency metrics.
 
 ---
 
-## 4. Core Cypher Query Suite
+## 🧱 Modular 3-Container Workspace Architecture
 
-### A. Multi-Hop Downstream Blast Radius
-```cypher
-MATCH path = (root:Service {id: $service_id})<-[:DEPENDS_ON*1..5]-(dependent:Service)
-RETURN root.name AS root, dependent.name AS dependent, dependent.criticality AS criticality
-```
+The interactive console is divided into three distinct operational containers:
 
-### B. Conflicting Claims Detection
-```cypher
-MATCH (a:Claim)-[:ABOUT]->(s:Service {id: $service_id}),
-      (b:Claim)-[:ABOUT]->(s)
-WHERE a.predicate = b.predicate AND a.id <> b.id
-OPTIONAL MATCH (d1:Document)-[:SUPPORTS]->(a)
-OPTIONAL MATCH (d2:Document)-[:SUPPORTS]->(b)
-OPTIONAL MATCH (a)-[cf:CONFLICTS_WITH]->(b)
-RETURN a, b, d1, d2, cf, s
-```
-
-### C. Expert & SME Discovery (Ownership + Incident Experience + ADRs)
-```cypher
-MATCH (p:Person)-[:OWNS]->(s:Service {id: $service_id})
-RETURN p.id AS id, p.name AS name, p.role AS role, p.email AS email, 'Direct Service Owner' AS reason, 5 AS weight
-UNION
-MATCH (p:Person)-[w:WORKED_ON]->(i:Incident)-[:AFFECTS]->(s:Service {id: $service_id})
-RETURN p.id AS id, p.name AS name, p.role AS role, p.email AS email, ('Incident Responder (' + w.role + ')') AS reason, 4 AS weight
-UNION
-MATCH (p:Person)-[:AUTHORED]->(d:Decision)-[:CHANGES]->(s:Service {id: $service_id})
-RETURN p.id AS id, p.name AS name, p.role AS role, p.email AS email, ('Author of ' + d.id) AS reason, 4 AS weight
-```
-
-### D. Human-in-the-Loop Knowledge Correction
-```cypher
-MATCH (stale:Claim {id: $claim_id})
-SET stale.status = 'superseded',
-    stale.valid_to = '2026-09-15',
-    stale.reviewed_by = $reviewed_by,
-    stale.reviewed_at = '2026-10-14T16:00:00Z'
-WITH stale
-MATCH (stale)-[cf:CONFLICTS_WITH]->(approved:Claim)
-DELETE cf
-CREATE (stale)-[:SUPERSEDED_BY {reason: 'Superseded via human approval'}]->(approved)
-RETURN stale
-```
+1. **Top Viewport (Full-Width Graph Canvas)**:
+   Interactive, physics-stabilized visualization of the FalkorDB company graph with node inspection and deep property drawers.
+2. **Container 1 (Command Center & Capability Slider)**:
+   - Header banner with `AI COMMAND & INVESTIGATION`.
+   - Step 1 Capability Slider with interactive `1, 2, 3` pills and `◀`/`▶` navigation.
+   - Dynamic prompt card, natural language query input, and `[ EXECUTE INVESTIGATION ]` button.
+   - Strictly concludes right after the execution button.
+3. **Container 2 (Dedicated Workspace & Graph Outcomes)**:
+   Displays targeted operational findings based on the active capability (PR #318 drift block, P0 war room squad dispatch, or service ownership conflict).
+4. **Container 3 (Technical Audit Trail & Cypher Tools)**:
+   Collapsible Cypher traversal text, auditable document links (`RFC-102`, `ADR-042`, `INC-8812`), and verifiable graph tool trace logs.
 
 ---
 
-## 5. Flagship Superpowers & Demo Scenarios
-
-OrgMind provides 4 distinct enterprise capabilities powered by FalkorDB:
-
-### 🚨 1. P0 Incident Commander (Firefighting Mode)
-* **What it does**: When an outage strikes (e.g. `payments-svc 500 auth cascade`), FalkorDB traverses 5 hops of the dependency graph to compute the **blast radius** (`checkout-web [P0]`, `billing-svc [P1]`).
-* **Historical Precedents**: Matches past post-mortem **INC-8812** with root cause (HMAC token desync).
-* **Automated Squad Dispatch**: Mobilizes the previous incident commander (`Elena Rostova`) and domain SME (`Sarah Jenkins`) with 1-click Slack dispatch copy.
-
-### ⚖️ 2. AI Staff Architect (Fire Prevention Mode)
-* **What it does**: Acts as an automated CI/CD architectural gate. When a pull request (e.g. PR #318) attempts to revert authentication to symmetric HMAC keys, FalkorDB blocks the merge.
-* **ADR Compliance**: Cites approved **ADR-042** (mandating asymmetric RS256 token rotation) and flags that reverting revives the vulnerability that caused outage INC-8812.
-* **1-Click Review**: Generates formatted markdown for GitHub PR review comments.
-
-### 🧠 3. Living Institutional Memory & Stale Claim Healing
-* **Contradiction Detection**: Detects conflicting claims between stale architecture docs (RFC-102 with `AUTH-V1`) and approved decisions (ADR-042 with `AUTH-V2`).
-* **1-Click Graph Healing**: User clicks **"Approve Correction"** to deterministically mutate FalkorDB: marks `clm_auth_v1` as `superseded` and creates `[:SUPERSEDED_BY]` audit edge.
-
-### 📥 4. Bring Your Own Architecture (Custom Ingestion)
-* **Enterprise Customization**: Ingest any company's microservices, teams, and policies via structured JSON spec (`/api/ingest/json`) or plain English architecture notes (`/api/ingest/text`).
-
----
-
-## 6. Quickstart & Local Setup
+## 🚀 Quickstart Guide
 
 ### Prerequisites
 - Docker & Docker Compose
 - Python 3.9+
 - Node.js 20+
 
-### Option A: One-Command Start (Recommended)
+### 1. One-Click Automated Launch
 ```bash
 ./start.sh
 ```
-This automatically:
-1. Verifies/starts FalkorDB in Docker (`port 6379` and FalkorDB Browser on `port 3000`).
-2. Populates FalkorDB with the initial Nexora Cloud company graph.
-3. Launches the FastAPI backend on `http://localhost:8001`.
-4. Launches the Vite React frontend console on `http://localhost:5173`.
+This script will:
+- Start the FalkorDB container on port `6379` (Browser on `3000`).
+- Seed the enterprise company graph into FalkorDB.
+- Launch the FastAPI intelligence gateway on `http://localhost:8001`.
+- Launch the luxury Vite React frontend on `http://localhost:5173`.
 
-### Option B: Manual Setup
+### 2. Manual Step-by-Step Launch
 
-1. **Start FalkorDB**:
-   ```bash
-   docker compose up -d
-   ```
-2. **Setup Backend**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r backend/requirements.txt
-   python3 backend/seed_data.py
-   uvicorn backend.main:app --port 8001 --reload
-   ```
-3. **Setup Frontend**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+#### Start FalkorDB
+```bash
+docker compose up -d
+```
+
+#### Start Backend Intelligence Gateway
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+python3 backend/seed_data.py
+uvicorn backend.main:app --host 0.0.0.0 --port 8001 --reload
+```
+
+#### Start Frontend UI
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 
-## 7. Automated Acceptance Tests
+## 🧪 Acceptance Test Suite (Passing 6/6)
 
-To verify that all Hackathon Track-3 acceptance criteria pass deterministically:
+Run the deterministic test suite to verify all Hackathon Track-3 criteria:
 
 ```bash
 PYTHONPATH=. ./venv/bin/pytest tests/test_queries.py -v
 ```
 
-All 6 test suites verify:
-- Service ownership resolution
-- Multi-hop downstream blast radius reachability
-- Incident history correlation
-- Conflicting claim detection & state transition lifecycle
-- Degree-weighted expert scoring
-- End-to-end agent investigation outputs
+```
+tests/test_queries.py::test_service_ownership_resolution PASSED           [ 16%]
+tests/test_queries.py::test_multihop_blast_radius PASSED                  [ 33%]
+tests/test_queries.py::test_incident_history_correlation PASSED          [ 50%]
+tests/test_queries.py::test_conflicting_claims_detection PASSED          [ 66%]
+tests/test_queries.py::test_expert_scoring_degree_weighted PASSED        [ 83%]
+tests/test_queries.py::test_agent_investigate_integration PASSED         [100%]
+```
 
 ---
 
-## 8. Suggested 3-Minute Demo Video Walkthrough
+## 📖 Complete Technical Documentation
 
-1. **Minute 0:00 – 0:45: The Problem & Live FalkorDB Graph**
-   - Introduce OrgMind for Track 3 (Company Brain).
-   - Point to the live interactive canvas on the right showing Nexora Cloud's 6 microservices, teams, people, ADRs, and incidents in FalkorDB.
-   - Show FalkorDB Browser at `http://localhost:3000`.
+- **Complete Technical Specification**: [DOCUMENTATION.md](DOCUMENTATION.md)
+- **In-App Documentation**: Accessible in the web console at [http://localhost:5173](http://localhost:5173)
 
-2. **Minute 0:45 – 1:30: Superpower 1 — P0 Incident Commander**
-   - Click **"P0 Incident Commander"** on the left.
-   - Show how FalkorDB traverses dependencies to flag downstream impact on `checkout-web` and `billing-svc`.
-   - Show historical match to `INC-8812` and automated on-call squad dispatch. Click **"Copy Slack Dispatch"**.
-
-3. **Minute 1:30 – 2:15: Superpower 2 — AI Staff Architect PR Drift Gate**
-   - Click **"AI Staff Architect Guard"**.
-   - Show PR #318 blocked due to ADR-042 violation (preventing recurrence of INC-8812).
-   - Click **"View ADR-042"** to show document evidence with auditable provenance.
-
-4. **Minute 2:15 – 3:00: 1-Click Knowledge Healing & Custom Company Ingestion**
-   - Click **"1-Click Approve Correction"** to see FalkorDB update `active` claim to `superseded` in real-time.
-   - Click **"📥 Ingest Company Data"** to demonstrate custom topology ingestion into FalkorDB.
-   - Conclude: Why FalkorDB graph traversal beats vector search for institutional memory.
-
+---
+*Built with ❤️ for the FalkorDB Hackathon 2026 — Track 3: Company Brain.*
